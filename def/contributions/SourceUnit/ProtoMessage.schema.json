@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceUnit/ProtoMessage/v1",
+  "title": "ProtoMessageContribution",
+  "description": "A Protocol Buffers message declaration found in a .proto file.",
+  "type": "object",
+  "required": [
+    "path",
+    "fullName"
+  ],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path to the .proto file."
+    },
+    "package": {
+      "type": "string",
+      "description": "Protobuf package."
+    },
+    "fullName": {
+      "type": "string",
+      "description": "Fully-qualified message name (package.Message)."
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "number",
+          "type"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer"
+          },
+          "type": {
+            "type": "string",
+            "description": "Field type (proto syntax)."
+          },
+          "label": {
+            "type": "string",
+            "enum": [
+              "optional",
+              "required",
+              "repeated",
+              "singular"
+            ]
+          },
+          "jsonName": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

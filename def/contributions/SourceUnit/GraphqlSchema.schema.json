@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceUnit/GraphqlSchema/v1",
+  "title": "GraphqlSchemaContribution",
+  "description": "A GraphQL type/operation declaration from a .graphql / .gql schema file.",
+  "type": "object",
+  "required": [
+    "path",
+    "name",
+    "kind"
+  ],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path to the GraphQL schema file."
+    },
+    "name": {
+      "type": "string",
+      "description": "Type or operation name."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "type",
+        "interface",
+        "union",
+        "enum",
+        "input",
+        "scalar",
+        "query",
+        "mutation",
+        "subscription",
+        "directive"
+      ]
+    },
+    "fields": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "type"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "description": "GraphQL type expression."
+          },
+          "nullable": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

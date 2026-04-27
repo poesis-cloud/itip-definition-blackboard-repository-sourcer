@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceInterface/OpenApiOperation/v1",
+  "title": "OpenApiOperationContribution",
+  "description": "An OpenAPI operation lifted from a spec file or framework-annotated controller (Spring, FastAPI, ...).",
+  "type": "object",
+  "required": [
+    "operationId",
+    "method",
+    "pathTemplate"
+  ],
+  "properties": {
+    "operationId": {
+      "type": "string"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "GET",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+        "HEAD",
+        "OPTIONS",
+        "TRACE"
+      ]
+    },
+    "pathTemplate": {
+      "type": "string",
+      "description": "OpenAPI path template (e.g. /users/{id})."
+    },
+    "specPath": {
+      "type": "string",
+      "description": "Repo-relative path of the source spec file (when applicable)."
+    },
+    "implementingSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the controller/handler implementation, when known."
+    },
+    "summary": {
+      "type": "string"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "OpenAPI tags."
+    },
+    "requestSchemaRef": {
+      "type": "string",
+      "description": "Pointer/URI to the request body schema."
+    },
+    "responseSchemaRefs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Pointers/URIs to response body schemas, by status."
+    }
+  },
+  "additionalProperties": false
+}

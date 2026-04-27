@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceInventory/SbomComponent/v1",
+  "title": "SbomComponentContribution",
+  "description": "A single SBOM component (typically syft / CycloneDX-derived) representing a third-party dependency present in the repo or its build outputs.",
+  "type": "object",
+  "required": [
+    "name",
+    "type"
+  ],
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Component name (purl-stripped)."
+    },
+    "version": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "library",
+        "framework",
+        "application",
+        "container",
+        "operating-system",
+        "other"
+      ]
+    },
+    "purl": {
+      "type": "string",
+      "description": "Package URL (purl) when available."
+    },
+    "licenses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "SPDX expressions or license names."
+    },
+    "supplier": {
+      "type": "string"
+    },
+    "evidencePath": {
+      "type": "string",
+      "description": "Repo-relative path of the manifest/lockfile this was derived from."
+    }
+  },
+  "additionalProperties": false
+}

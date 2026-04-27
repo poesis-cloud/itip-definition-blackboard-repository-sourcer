@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceRelation/SymbolRef/v1",
+  "title": "SymbolRefContribution",
+  "description": "A reference (use-site) to a symbol from another location. Lift of an SCIP occurrence with role=Reference.",
+  "type": "object",
+  "required": [
+    "fromSymbol",
+    "toSymbol",
+    "path"
+  ],
+  "properties": {
+    "fromSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the source endpoint (must resolve to a SourceUnit.CodeUnit in this Bb)."
+    },
+    "toSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the target endpoint (must resolve to a SourceUnit.CodeUnit in this Bb)."
+    },
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path of the referencing site."
+    },
+    "range": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "LSP-style range of the reference."
+    }
+  },
+  "additionalProperties": false
+}

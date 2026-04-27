@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceUnit/JpaEntity/v1",
+  "title": "JpaEntityContribution",
+  "description": "A JPA / Hibernate entity declaration (Java/Kotlin) with mapped table and column metadata.",
+  "type": "object",
+  "required": [
+    "symbol",
+    "tableName"
+  ],
+  "properties": {
+    "symbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the entity class."
+    },
+    "tableName": {
+      "type": "string"
+    },
+    "schema": {
+      "type": "string"
+    },
+    "idColumns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Column names participating in the primary key."
+    },
+    "columns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "javaField": {
+            "type": "string"
+          },
+          "javaType": {
+            "type": "string"
+          },
+          "sqlType": {
+            "type": "string"
+          },
+          "nullable": {
+            "type": "boolean"
+          },
+          "unique": {
+            "type": "boolean"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

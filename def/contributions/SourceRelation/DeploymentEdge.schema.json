@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceRelation/DeploymentEdge/v1",
+  "title": "DeploymentEdgeContribution",
+  "description": "A deployment edge linking a code/build artifact to an IaC resource that deploys/hosts it.",
+  "type": "object",
+  "required": [
+    "fromSymbol",
+    "toSymbol"
+  ],
+  "properties": {
+    "fromSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the source endpoint (must resolve to a SourceUnit.CodeUnit in this Bb)."
+    },
+    "toSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the target endpoint (must resolve to a SourceUnit.CodeUnit in this Bb)."
+    },
+    "iacKind": {
+      "type": "string",
+      "enum": [
+        "terraform",
+        "cloudformation",
+        "kubernetes",
+        "helm",
+        "pulumi",
+        "ansible",
+        "bicep",
+        "other"
+      ]
+    },
+    "rationale": {
+      "type": "string",
+      "description": "How the link was established (e.g. matching image tag, container name, S3 bucket name)."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceUnit/CodeUnit/v1",
+  "title": "CodeUnitContribution",
+  "description": "A symbol-level interpretation of a code unit (typically an SCIP SymbolInformation record). One per discovered symbol.",
+  "type": "object",
+  "required": [
+    "symbol",
+    "kind",
+    "path"
+  ],
+  "properties": {
+    "symbol": {
+      "type": "string",
+      "description": "SCIP-style symbol id, stable across the indexer."
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "class",
+        "interface",
+        "trait",
+        "struct",
+        "enum",
+        "function",
+        "method",
+        "field",
+        "constant",
+        "variable",
+        "package",
+        "module",
+        "namespace",
+        "type-alias",
+        "other"
+      ]
+    },
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path of the defining source file."
+    },
+    "range": {
+      "type": "object",
+      "description": "Definition range (LSP-style 0-based positions).",
+      "additionalProperties": false,
+      "properties": {
+        "startLine": {
+          "type": "integer"
+        },
+        "startChar": {
+          "type": "integer"
+        },
+        "endLine": {
+          "type": "integer"
+        },
+        "endChar": {
+          "type": "integer"
+        }
+      }
+    },
+    "displayName": {
+      "type": "string"
+    },
+    "signature": {
+      "type": "string",
+      "description": "Source-language signature when applicable."
+    },
+    "documentation": {
+      "type": "string",
+      "description": "Doc comment, when extractable."
+    },
+    "language": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

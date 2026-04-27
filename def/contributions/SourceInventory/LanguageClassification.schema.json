@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceInventory/LanguageClassification/v1",
+  "title": "LanguageClassificationContribution",
+  "description": "Per-file or per-directory language classification (typically tokei-derived).",
+  "type": "object",
+  "required": [
+    "path",
+    "language"
+  ],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path the classification applies to."
+    },
+    "language": {
+      "type": "string",
+      "description": "Canonical language name (e.g. Java, TypeScript, Python, Go)."
+    },
+    "confidence": {
+      "type": "number",
+      "description": "Optional [0,1] confidence."
+    },
+    "lines": {
+      "type": "integer",
+      "description": "Total lines counted."
+    },
+    "code": {
+      "type": "integer"
+    },
+    "comments": {
+      "type": "integer"
+    },
+    "blanks": {
+      "type": "integer"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceInterface/DbTable/v1",
+  "title": "DbTableContribution",
+  "description": "A database table the system reads from or writes to (DDL-derived or ORM-derived).",
+  "type": "object",
+  "required": [
+    "tableName",
+    "role"
+  ],
+  "properties": {
+    "tableName": {
+      "type": "string"
+    },
+    "schema": {
+      "type": "string"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "read",
+        "write",
+        "readwrite"
+      ]
+    },
+    "ddlPath": {
+      "type": "string",
+      "description": "Repo-relative path of the DDL or migration that defines the table, when known."
+    },
+    "implementingSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the JPA entity / DAO that maps the table, when known."
+    },
+    "primaryKeyColumns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

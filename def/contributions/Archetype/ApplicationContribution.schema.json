@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Archetype/ApplicationContribution/v1",
+  "title": "ArchetypeApplicationContribution",
+  "description": "Post payload of a Contribution onto the Archetype panel with slot = Application. One Archetype URI per contribution; the client reducer collects the union over all Application contributions for a given Definition.",
+  "type": "object",
+  "required": [
+    "targetIdentityKey",
+    "archetypeRef"
+  ],
+  "properties": {
+    "targetIdentityKey": {
+      "type": "string",
+      "description": "Definition.identityKey this Archetype applies to."
+    },
+    "archetypeRef": {
+      "type": "string",
+      "description": "Versioned URI of the Archetype Definition registered in Definition Manager."
+    },
+    "rationale": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

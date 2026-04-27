@@ -1,0 +1,204 @@
+@startuml components
+
+' ============================================================
+' VISUAL THEME
+' ============================================================
+skinparam shadowing false
+skinparam linetype ortho
+skinparam roundcorner 12
+skinparam ArrowColor #57606A
+skinparam DefaultFontName "SansSerif"
+skinparam backgroundColor #FFFFFF
+
+skinparam packageStyle rectangle
+skinparam packageBackgroundColor #F6F8FA
+skinparam packageBorderColor #57606A
+
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #57606A
+skinparam classFontColor #24292F
+
+skinparam noteBackgroundColor #FFF8C5
+skinparam noteBorderColor #57606A
+
+frame "CD - ITIP Definition Blackboard Repository Sourcer components (client sourcer; REST-client to Definition Blackboard Manager)" {
+
+  note as IntroNote
+    **ITIP Definition Blackboard Repository Sourcer** -- a client sourcer that turns a
+    code repository into GSM Ascriptions registered into the
+    Definition Manager. It is a separate process from the
+    [Definition Blackboard Manager](../../../sie/sie-definition-blackboard-manager/)
+    and speaks to it exclusively over REST.
+
+    The sourcer owns:
+    - **the client Run concept** (the service has no Run resource;
+      a client Run is purely client-side state and creates exactly
+      one Blackboard, carrying all 7 panels),
+    - the Knowledge Source machinery (sandboxing, external tool
+      brokering, classloader -- client-internal concerns),
+    - the panel ontology (`blackboard/`),
+    - the **client controller / reducer** (post-seal: applies
+      per-slot reduction policy over the sealed contribution
+      stream; logs reducer runs for replay),
+    - the post-reduction pipeline (validation against
+      archetypes, registration into Definition Manager).
+
+    The blackboard service owns: REST resources, panel registry,
+    contribution validation, the Blackboard-seal lifecycle, and
+    the audit ledger. The service has NO Run, NO Phase, NO
+    chaining concept, NO resolver, NO reduction concept, and
+    NO cardinality enforcement (no `atMostOne`).
+  end note
+
+  ' ============================================================
+  ' CLIENT SOURCER COMPONENTS
+  ' ============================================================
+
+  package "ITIP Definition Blackboard Repository Sourcer (client process)" as CLIENT {
+
+    class RunDriver <<client-internal>> {
+      +start(repoConfig): RunHandle
+      +scheduleKSs()
+      +runReducer()
+      +postReductionPipeline()
+    }
+    note right of RunDriver
+      Top-level orchestrator. Owns the client `runId`.
+      Calls the SBM REST API to:
+      - POST /blackboards                         (create Bb;
+                                                    fully isolated)
+      - POST /blackboards/{bbId}/panels           (declare 7 panels)
+      - POST /blackboards/{bbId}/contributions    (KS posts)
+      - POST /blackboards/{bbId}/seal             (close Bb)
+      - GET  /blackboards/{bbId}/contributions    (sealed stream;
+                                                    fed to the
+                                                    client reducer)
+    end note
+
+    class RepoBootstrap <<client-internal>> {
+      +clone(gitUrl, ref): WorkingCopy
+      +scope(includeGlobs, excludeGlobs)
+      +profile(): RunProfile
+    }
+    note right of RepoBootstrap
+      Was `GitRepoInstructionsProvider`.
+      Client-internal initialization:
+      clones the repo, materialises a
+      working copy, derives scope/profile,
+      and feeds the client-internal Run
+      Driver. Posts NO contributions.
+    end note
+
+    package "Discovery / lift KSs" as KS_SRC {
+      class RepoInventoryKS <<client-internal>>
+      class ScipIngestKS <<client-internal>>
+      class ConfigInterfaceKS <<client-internal>>
+      class JoernCallGraphKS <<client-internal>>
+      class InterfaceLiftKS <<client-internal>>
+    }
+    note right of KS_SRC
+      POST contributions to the
+      `itip:Source*` panels of the
+      single Blackboard. External tools
+      (scip-*, joern, syft, tokei) are
+      sandboxed client-side and invoked
+      via `execve` allowlist; the service
+      sees only the resulting contributions.
+    end note
+
+    package "GSM-spine KSs" as KS_TGT {
+      class GsmIdentificationKS <<client-internal>>
+      class GsmReconciliationKS <<client-internal>>
+      class ArchetypeMatchingKS <<client-internal>>
+      class StatementShapingKS <<client-internal>>
+      class GranularityKS <<client-internal,top-down>>
+      class ConfidenceSynthesisKS <<client-internal>>
+    }
+    note right of KS_TGT
+      POST contributions to the
+      `itip:Definition` / `itip:Archetype`
+      / `itip:Statement` panels of the
+      same Blackboard. They gate their
+      trigger predicates on the live
+      `itip:Source*` views (`GET
+      /blackboards/{bbId}/state`); intra-DAG
+      ordering is client-side scheduling.
+    end note
+
+    class ClientReducer <<client-internal,controller>> {
+      +reduce(sealedStream): ReducedView
+      +log(reducerId, version, params, inputs[], output)
+    }
+    note right of ClientReducer
+      Runs after Bb seal. Reads
+      `GET /blackboards/{bbId}/contributions`
+      (byte-stable sealed stream) and applies
+      the per-slot client reduction policy
+      declared in `panels.puml` notes
+      (highestConfidence / collectAll /
+      compose / ...). Logs every reducer
+      invocation for deterministic replay.
+    end note
+
+    class PostReductionPipeline <<client-internal>> {
+      +validateAgainstArchetypes(reducedView)
+      +registerAscriptions(reducedView)
+    }
+  }
+
+  ' ============================================================
+  ' BLACKBOARD ONTOLOGY (sibling folder)
+  ' ============================================================
+
+  package "Client-declared panels (panels.puml + contributions/)" as BBP {
+    note as BBPNote
+      itip:SourceInventory   itip:Definition
+      itip:SourceUnit        itip:Archetype
+      itip:SourceRelation    itip:Statement
+      itip:SourceInterface
+      Authoritative declarations:
+      panels.puml
+    end note
+  }
+
+  ' ============================================================
+  ' EXTERNAL DEPENDENCIES
+  ' ============================================================
+
+  package "External (client-side)" as EXT {
+    class DefinitionBlackboardManager <<service,external>> {
+      REST API
+    }
+    class DefinitionManager <<service,external>> {
+      Ascription registry
+    }
+    class ExternalTools <<binaries,external>> {
+      scip-*, joern-*,
+      syft, tokei
+    }
+    class InferenceService <<service,external>> {
+      LLM completion
+    }
+  }
+
+  ' ============================================================
+  ' RELATIONSHIPS
+  ' ============================================================
+
+  RepoBootstrap --> RunDriver : feeds scope+profile
+  RunDriver --> KS_SRC : schedules
+  RunDriver --> KS_TGT : schedules
+  RunDriver --> ClientReducer : runs after Bb seal
+  RunDriver --> PostReductionPipeline : runs after reduction
+
+  KS_SRC ..> BBP : posts contributions (REST)
+  KS_TGT ..> BBP : posts contributions (REST)
+
+  RunDriver --> DefinitionBlackboardManager : REST
+  ClientReducer --> DefinitionBlackboardManager : GET sealed stream
+  KS_SRC --> ExternalTools : execve (sandboxed)
+  KS_TGT --> InferenceService : LLM (StatementShapingKS only)
+  PostReductionPipeline --> DefinitionManager : registers Ascriptions
+}
+
+@enduml

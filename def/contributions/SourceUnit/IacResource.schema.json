@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceUnit/IacResource/v1",
+  "title": "IacResourceContribution",
+  "description": "An infrastructure-as-code resource declaration (Terraform, CloudFormation, Kubernetes manifest, Pulumi, ...).",
+  "type": "object",
+  "required": [
+    "path",
+    "iacKind",
+    "resourceType",
+    "name"
+  ],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path to the IaC source file."
+    },
+    "iacKind": {
+      "type": "string",
+      "enum": [
+        "terraform",
+        "cloudformation",
+        "kubernetes",
+        "helm",
+        "pulumi",
+        "ansible",
+        "bicep",
+        "other"
+      ]
+    },
+    "resourceType": {
+      "type": "string",
+      "description": "Provider-qualified resource type (e.g. aws_s3_bucket, apps/v1/Deployment)."
+    },
+    "name": {
+      "type": "string",
+      "description": "Resource local name."
+    },
+    "provider": {
+      "type": "string"
+    },
+    "attributes": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Provider-specific attribute map (free-form)."
+    }
+  },
+  "additionalProperties": false
+}

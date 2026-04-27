@@ -1,0 +1,301 @@
+@startuml panels
+
+' ============================================================
+' VISUAL THEME
+' ============================================================
+skinparam shadowing false
+skinparam linetype ortho
+skinparam roundcorner 12
+skinparam ArrowColor #57606A
+skinparam DefaultFontName "SansSerif"
+skinparam backgroundColor #FFFFFF
+
+skinparam packageStyle rectangle
+skinparam packageBackgroundColor #F6F8FA
+skinparam packageBorderColor #57606A
+
+skinparam classBackgroundColor #FFFFFF
+skinparam classBorderColor #57606A
+skinparam classFontColor #24292F
+
+skinparam objectBackgroundColor #FFFFFF
+skinparam objectBorderColor #57606A
+skinparam objectFontColor #24292F
+
+skinparam noteBackgroundColor #FFF8C5
+skinparam noteBorderColor #57606A
+
+frame "CD - ITIP Definition Blackboard Repository Sourcer - Blackboard panels (single Blackboard, client-declared into generic service)" {
+
+  note as IntroNote
+    **Sourcer ontology -- single Blackboard, client-declared**
+
+    The seven panels below are declared by the ITIP repository
+    sourcer in one POST `/blackboards/{bbId}/panels` to the
+    [Definition Blackboard Manager](../../../../sie/sie-definition-blackboard-manager/)
+    immediately after the client creates the Blackboard. The
+    service has zero hardcoded knowledge of these panels: it only
+    validates client-namespacing and slot post schemas at POST time.
+
+    Stratification is purely a **client-side scheduling concern**
+    (visualised below by the directed edges). The substrate has no
+    `dependencyPanels` field on Panel; the DAG lives in the client
+    sourcer's run loop, not in the substrate. All seven panels are
+    client-namespaced under `itip:`. The service has no "phase",
+    "source"/"target", or "Run" concept; this is one Blackboard
+    with one seal lifecycle.
+
+    **Reduction is controller-side.** Slot definitions carry only
+    `schemaUri`. The substrate stores every contribution and
+    enforces no cardinality; the ITIP **client controller**
+    (post-seal) reads the sealed contribution stream and applies
+    the per-slot reduction policy listed in each panel note below.
+    None of these policies are service-side; they are client-side
+    reducers.
+  end note
+
+  ' ============================================================
+  ' SHARED ENUMS (client-side; carried inside Contribution.post)
+  ' ============================================================
+
+  enum DefinitionSubjectKind {
+    STRUCTURE
+    MECHANISM
+    EFFECTOR
+    RECEPTOR
+    INTERACTION
+    ARCHETYPE
+    DIRECTIVE
+    NORM
+  }
+
+  enum DefinitionVerdict {
+    keep
+    drop
+    splitInto
+    mergeWith
+  }
+
+  ' ============================================================
+  ' DISCOVERY / LIFT PANELS (itip:Source*)
+  ' ============================================================
+
+  package "Discovery / lift panels" as SRC {
+
+    object "itip:SourceInventory : Panel" as SourceInventory {
+      name = "itip:SourceInventory"
+      slots[FileTreeNode]            = (schemaUri: bb://itip/blackboard/SourceInventory/FileTreeNode/v1)
+      slots[GitCommit]               = (schemaUri: bb://itip/blackboard/SourceInventory/GitCommit/v1)
+      slots[ModuleSpec]              = (schemaUri: bb://itip/blackboard/SourceInventory/ModuleSpec/v1)
+      slots[LanguageClassification]  = (schemaUri: bb://itip/blackboard/SourceInventory/LanguageClassification/v1)
+      slots[FileMetrics]             = (schemaUri: bb://itip/blackboard/SourceInventory/FileMetrics/v1)
+      slots[SbomComponent]           = (schemaUri: bb://itip/blackboard/SourceInventory/SbomComponent/v1)
+      slots[ConfigEntry]             = (schemaUri: bb://itip/blackboard/SourceInventory/ConfigEntry/v1)
+    }
+
+    note bottom of SourceInventory
+      **itip:SourceInventory** -- repository structural catalogue.
+      Base of the DAG; every other panel transitively depends on it.
+      Writers: `RepoInventoryKS`, `ConfigInterfaceKS`.
+    end note
+
+    object "itip:SourceUnit : Panel" as SourceUnit {
+      name = "itip:SourceUnit"
+      slots[CodeUnit]      = (schemaUri: bb://itip/blackboard/SourceUnit/CodeUnit/v1)
+      slots[JpaEntity]     = (schemaUri: bb://itip/blackboard/SourceUnit/JpaEntity/v1)
+      slots[ProtoMessage]  = (schemaUri: bb://itip/blackboard/SourceUnit/ProtoMessage/v1)
+      slots[GraphqlSchema] = (schemaUri: bb://itip/blackboard/SourceUnit/GraphqlSchema/v1)
+      slots[IacResource]   = (schemaUri: bb://itip/blackboard/SourceUnit/IacResource/v1)
+    }
+
+    note bottom of SourceUnit
+      **itip:SourceUnit** -- symbol-level interpretations within a
+      single code unit. `CodeUnit.post` carries an SCIP
+      `SymbolInformation` record.
+      Writers: `ScipIngestKS` (per language).
+    end note
+
+    object "itip:SourceRelation : Panel" as SourceRelation {
+      name = "itip:SourceRelation"
+      slots[SymbolRef]           = (schemaUri: bb://itip/blackboard/SourceRelation/SymbolRef/v1)
+      slots[TypeHierarchyEdge]   = (schemaUri: bb://itip/blackboard/SourceRelation/TypeHierarchyEdge/v1)
+      slots[ImplementationEdge]  = (schemaUri: bb://itip/blackboard/SourceRelation/ImplementationEdge/v1)
+      slots[ImportEdge]          = (schemaUri: bb://itip/blackboard/SourceRelation/ImportEdge/v1)
+      slots[CallEdge]            = (schemaUri: bb://itip/blackboard/SourceRelation/CallEdge/v1)
+      slots[DataflowEdge]        = (schemaUri: bb://itip/blackboard/SourceRelation/DataflowEdge/v1)
+      slots[DeploymentEdge]      = (schemaUri: bb://itip/blackboard/SourceRelation/DeploymentEdge/v1)
+    }
+
+    note bottom of SourceRelation
+      **itip:SourceRelation** -- typed edges between source units.
+      Client-controller policy: `collectAll` (edges are additive).
+      Endpoints of every edge MUST resolve to a
+      `itip:SourceUnit.CodeUnit` contribution in the same Blackboard.
+      Writers: `ScipIngestKS` (SymbolRef, TypeHierarchyEdge,
+      ImplementationEdge, ImportEdge), `JoernCallGraphKS` (CallEdge,
+      DataflowEdge).
+    end note
+
+    object "itip:SourceInterface : Panel" as SourceInterface {
+      name = "itip:SourceInterface"
+      slots[OpenApiOperation] = (schemaUri: bb://itip/blackboard/SourceInterface/OpenApiOperation/v1)
+      slots[KafkaTopic]       = (schemaUri: bb://itip/blackboard/SourceInterface/KafkaTopic/v1)
+      slots[DbTable]          = (schemaUri: bb://itip/blackboard/SourceInterface/DbTable/v1)
+      slots[TestSpec]         = (schemaUri: bb://itip/blackboard/SourceInterface/TestSpec/v1)
+    }
+
+    note bottom of SourceInterface
+      **itip:SourceInterface** -- externally observable interfaces.
+      OpenAPI operations, Kafka topics, DB tables, test specs. The
+      richest source of identity-bearing signals consumed by
+      `GsmIdentificationKS` further down the DAG.
+      Writers: `ConfigInterfaceKS`, `InterfaceLiftKS`.
+    end note
+  }
+
+  ' ============================================================
+  ' GSM-SPINE PANELS (itip:Definition / itip:Archetype / itip:Statement)
+  ' ============================================================
+
+  package "GSM-spine panels" as TGT {
+
+    object "Definition : Panel" as DefinitionPanel {
+      name = "itip:Definition"
+      slots[Claim]   = (schemaUri: bb://itip/blackboard/Definition/ClaimContribution/v1)
+      slots[Merge]   = (schemaUri: bb://itip/blackboard/Definition/MergeContribution/v1)
+      slots[Verdict] = (schemaUri: bb://itip/blackboard/Definition/VerdictContribution/v1)
+    }
+
+    note bottom of DefinitionPanel
+      **itip:Definition** -- identity-binding panel of the GSM spine.
+
+      Decides WHICH source items collectively define ONE GSM subject
+      (Structure, Mechanism, Effector, Receptor, Interaction,
+      Archetype, Directive, Norm). The `identityKey` minted on
+      `Claim` is the join key for downstream GSM-spine panels.
+
+      Three slots (closed):
+      - `Claim`   -- `GsmIdentificationKS` asserts an identity from
+        the resolved `itip:Source*` views. Carries `subjectKind`,
+        `identityKey`, `supportingSourceIds`. Contributions MAY
+        populate `derivedContribution[]` with URIs of supporting `itip:Source*`
+        contributions.
+      - `Merge`   -- `GsmReconciliationKS` asserts that two prior
+        identities describe the same subject. Carries
+        `supersedesIdentityKeys` (non-empty) and a surviving
+        `targetIdentityKey`. Identity-time merging (pre-Statement),
+        based on source signals only.
+      - `Verdict` -- `GranularityKS` (TOP_DOWN) posts one
+        consolidation verdict per identity, informed by populated
+        Statements: `keep | drop | splitInto | mergeWith`.
+
+      **Validation Rules**:
+      - `Claim.identityKey` is required; it is the join key.
+      - `Merge.supersedesIdentityKeys[]` MUST resolve to prior
+        `Claim` contributions in the same Blackboard.
+      - `Verdict.mergeWith` => `targetIdentityKeys[0]` MUST resolve
+        to a Definition; `Verdict.splitInto` => `targetIdentityKeys[]`
+        non-empty.
+
+      **Merge precedence rule** (`Definition.Merge` vs
+      `Definition.Verdict.mergeWith`): identity-time merge first,
+      post-Statement Verdict wins when both apply (more informed).
+      The client-side post-reduction pipeline uses the reduced
+      Verdict for the registered Ascription.
+
+      **Client-controller reduction policy** (per slot, applied
+      against the sealed contribution stream):
+      - `Claim`   -- `highestConfidence` (tiebreak earliest timestamp).
+      - `Merge`   -- `collectAll` (all merge assertions union into
+        the reduced view; conflicts resolved by Verdict).
+      - `Verdict` -- `highestConfidence` (one verdict wins per
+        identity).
+
+    object "Archetype : Panel" as ArchetypePanel {
+      name = "itip:Archetype"
+      slots[Application] = (schemaUri: bb://itip/blackboard/Archetype/ApplicationContribution/v1)
+    }
+
+    note bottom of ArchetypePanel
+      **itip:Archetype** -- archetype-application panel.
+
+      One slot (closed):
+      - `Application` -- `ArchetypeMatchingKS` posts one archetype
+        reference per contribution. `value.archetypeRef` is a
+        versioned URI of a registered GSM Archetype Definition.
+
+      `collectAll` resolver: union over Applications.
+
+      **Validation Rules**:
+      - `archetypeRef` MUST resolve to a registered Archetype.
+      - The asserted Archetype's structural-base allOf chain MUST
+        be compatible with the resolved
+        `Definition.Claim.subjectKind` for the same identity.
+
+      **Client-controller reduction policy** (per slot):
+      `Application` -- `collectAll`.
+    end note
+
+    object "Statement : Panel" as StatementPanel {
+      name = "itip:Statement"
+      slots[Draft] = (schemaUri: bb://itip/blackboard/Statement/DraftContribution/v1)
+    }
+
+    note bottom of StatementPanel
+      **itip:Statement** -- statement-shaping panel; the most
+      integrated panel of the GSM spine.
+
+      One slot (closed):
+      - `Draft` -- `StatementShapingKS` posts a partial or full
+        archetype-typed statement payload. Carries `statement` (the
+        archetype-typed payload), `completeness` (`partial` |
+        `full`), `shapingMethod` (`structural-extraction` |
+        `llm-completion` | `confidence-synthesis`).
+
+      `compose` resolver: cooperative shaping. Multiple shaping KSs
+      may contribute disjoint archetype fields; the client-controller
+      reducer computes the schema-driven per-key merge to assemble
+      the union.
+
+      A `ConfidenceSynthesisKS` is just a shaping variant that reads
+      the contribution stream, computes a synthesised confidence,
+      and posts a refined draft whose `confidence` carries the
+      synthesis result.
+
+      **Validation Rules**:
+      - `statement` MUST validate against the resolved Archetype
+        schema for the targeted Definition (client-side check; the
+        service only validates against the slot schema URI).
+      - LLM-driven (non-deterministic) contributions MUST carry a
+        `cacheKey` per the client's deterministic-replay invariant.
+      - The client's post-reduction pipeline rejects compositions
+        that remain `partial` after reduction.
+
+      **Client-controller reduction policy** (per slot):
+      `Draft` -- `compose` (deep per-key merge over the sealed stream).
+    end note
+  }
+
+  ' ============================================================
+  ' DAG
+  ' ============================================================
+
+  ' Discovery / lift sub-DAG
+  SourceInventory --> SourceUnit
+  SourceUnit --> SourceInterface
+  SourceUnit --> SourceRelation
+
+  ' GSM-spine sub-DAG fed by source panels
+  SourceInterface --> DefinitionPanel
+  SourceRelation --> DefinitionPanel
+  SourceUnit --> DefinitionPanel
+  SourceInventory --> DefinitionPanel
+
+  DefinitionPanel --> ArchetypePanel
+  ArchetypePanel --> StatementPanel
+
+  ' TOP_DOWN edge: GranularityKS reads Statement, writes Definition.Verdict
+  StatementPanel ..> DefinitionPanel : <<TOP_DOWN\n(Definition.Verdict)>>
+}
+
+@enduml

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Definition/MergeContribution/v1",
+  "title": "DefinitionMergeContribution",
+  "description": "Post payload of a Contribution posted onto the Definition panel with slot = Merge. A ReconciliationKS asserts that two or more prior Claim identityKeys describe the same GSM subject and should collapse onto one identity. This is identity-time merging, BEFORE Statement shaping. Granularity.Verdict (mergeWith) is post-statement consolidation; when both apply to the same identity, Granularity.Verdict wins because it is more informed (the resolved Granularity verdict supersedes the earlier Definition.Merge).",
+  "type": "object",
+  "required": [
+    "subjectKind",
+    "identityKey",
+    "supersedesIdentityKeys",
+    "rationale"
+  ],
+  "properties": {
+    "subjectKind": {
+      "type": "string",
+      "enum": [
+        "Structure",
+        "Mechanism",
+        "Effector",
+        "Receptor",
+        "Interaction",
+        "Archetype",
+        "Directive",
+        "Norm"
+      ]
+    },
+    "identityKey": {
+      "type": "string",
+      "description": "Surviving identityKey after the merge."
+    },
+    "supersedesIdentityKeys": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string"
+      },
+      "description": "Prior identityKeys absorbed by this merge."
+    },
+    "rationale": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

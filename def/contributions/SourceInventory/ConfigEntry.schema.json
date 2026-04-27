@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceInventory/ConfigEntry/v1",
+  "title": "ConfigEntryContribution",
+  "description": "A single configuration entry parsed from a config artifact (application.yaml, .env, kubernetes manifests, terraform vars, ...). Identity is (path, key).",
+  "type": "object",
+  "required": [
+    "path",
+    "format",
+    "key"
+  ],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path to the config file."
+    },
+    "format": {
+      "type": "string",
+      "enum": [
+        "yaml",
+        "json",
+        "toml",
+        "properties",
+        "env",
+        "hcl",
+        "ini",
+        "xml",
+        "other"
+      ]
+    },
+    "key": {
+      "type": "string",
+      "description": "Dotted/slash key path within the file."
+    },
+    "value": {
+      "description": "Raw value (any JSON type). Secret-detection / redaction is vendor-side.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "secretSuspected": {
+      "type": "boolean",
+      "description": "Vendor-side heuristic flag; the value MAY be redacted when true."
+    }
+  },
+  "additionalProperties": false
+}

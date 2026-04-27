@@ -1,0 +1,239 @@
+@startuml sourcing-workflow
+
+' ============================================================
+' VISUAL THEME
+' ============================================================
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam ArrowColor #57606A
+skinparam DefaultFontName "SansSerif"
+skinparam backgroundColor #FFFFFF
+
+skinparam sequence {
+  ParticipantBackgroundColor #FFFFFF
+  ParticipantBorderColor #57606A
+  LifeLineBorderColor #57606A
+  GroupBackgroundColor #F6F8FA
+  GroupBorderColor #57606A
+}
+skinparam noteBackgroundColor #FFF8C5
+skinparam noteBorderColor #57606A
+
+title ITIP Definition Blackboard Repository Sourcer - Sourcing workflow (single-Blackboard Run; client-side choreography over the Definition Blackboard Manager REST substrate)
+
+' ---- Client side (ITIP-specific) ----
+participant "ITIP Sourcer\n(RunDriver + RepoBootstrap)" as RD
+participant "KSs (discovery / lift\n+ GSM-spine; client-internal,\nsandboxed)" as KSs
+participant "External tools\n(scip-*, syft, tokei,\njoern-parse)" as ExtT
+participant "Inference service\n(LLM)" as Inf
+participant "DefMan exploration\nclient" as DefExp
+participant "Schema validator\n(client-side)" as JV
+participant "Client BundleStore\n(working copy + tool outputs)" as BS
+participant "Client Reducer\n(controller-side)" as Red
+participant "Post-reduction pipeline\n(validate + register to DefMan)" as PIPE
+
+' ---- Substrate side (Definition Blackboard Manager) ----
+participant "REST API" as API
+participant "Blackboard\nManager" as BBMgr
+participant "Panel Registry" as PanelReg
+participant "Contribution\nValidator" as Val
+participant "Seal Manager" as Seal
+database    "Blackboard\nStore + Audit" as Store
+
+note over RD, Store
+  **Scope** -- one client Run = one Blackboard.
+
+  This diagram merges two views in a single sequence:
+   * the **client-side ITIP choreography** (RunDriver, KSs, external
+     tools, inference, reducer, post-reduction pipeline);
+   * the **substrate-side REST sequence** (API, Blackboard Manager,
+     Panel Registry, Contribution Validator, Seal Manager, Store).
+
+  Each "Client posts ..." round-trip exposes the substrate's internal
+  participants so both layers are visible. The substrate has NO
+  Run/Phase/chaining/correlation concept; each Blackboard is fully
+  isolated. `runId` and the DAG between KSs are purely client-side.
+
+  Panels (client-declared, see `panels.puml`):
+  - `itip:SourceInventory`, `itip:SourceUnit`,
+    `itip:SourceRelation`, `itip:SourceInterface`
+  - `itip:Definition`, `itip:Archetype`, `itip:Statement`
+
+  KS catalogue:
+  - Discovery / lift: `RepoInventoryKS`, `ScipIngestKS`,
+    `ConfigInterfaceKS`, `JoernCallGraphKS`, `InterfaceLiftKS`
+  - GSM-spine:        `GsmIdentificationKS`, `GsmReconciliationKS`,
+                      `ArchetypeMatchingKS`, `StatementShapingKS`,
+                      `GranularityKS` (TOP_DOWN), `ConfidenceSynthesisKS`
+end note
+
+== Blackboard creation ==
+
+RD -> RD : mint runId (client-side)
+RD -> API : POST /blackboards\n  BlackboardConfig { name: "<repoLabel>",\n    auth: { writerSubjects: [...], bbAdminSubjects: [...] } }
+API -> BBMgr : create Blackboard
+BBMgr -> Store : persist Blackboard\n(status=OPEN, timestamp)
+BBMgr --> API : 201 + bbId + ETag
+API --> RD : 201 bbId, ETag
+
+RD -> RD : RepoBootstrap.clone(gitUrl, ref)\n  -> working copy in BundleStore
+RD -> RD : derive scope (include/exclude globs)\n  + profile
+
+== Declare topology (before first contribution) ==
+
+RD -> API : POST /blackboards/{bbId}/panels\n  PanelDeclaration[] (7 panels: 4 itip:Source* + 3 GSM-spine,\n  single DAG)\n  If-Match: <ETag>
+API -> PanelReg : register panels
+PanelReg -> PanelReg : validate client-namespacing\n  + per-slot schemaUri form
+PanelReg -> Store : persist panels + slots
+PanelReg --> API : 201 + panelIds + ETag
+API --> RD : 200 (DAG validated, schema URIs cached), new ETag
+
+note right of PanelReg
+  Topology is **frozen** when the first
+  contribution is accepted. A subsequent
+  POST .../panels then returns 409.
+end note
+
+== Run loop (client-side scheduling over the single DAG) ==
+
+loop until quiescence OR client-side maxIterations
+
+  RD -> API : GET /blackboards/{bbId}/state  (current view)
+  API -> Store : read view
+  API --> RD : state
+  RD -> RD : enumerate eligible KSs\n(triggerPredicate true)
+
+  RD -> KSs : fire eligible KSs (client-internal)
+
+  alt RepoInventoryKS fires (BOTTOM_UP)
+    KSs -> ExtT : execve tokei / syft (sandboxed)
+    ExtT -> BS : write tool outputs
+    ExtT --> KSs : output handles
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (contributionSlot={panel:itip:SourceInventory,\n     slot=FileTreeNode | GitCommit | ModuleSpec | LanguageClassification | FileMetrics | SbomComponent},\n   post={...})
+
+  else ScipIngestKS fires (BOTTOM_UP)
+    KSs -> ExtT : execve scip-{java|typescript|python|go} (sandboxed)
+    ExtT -> BS : write SCIP index
+    ExtT --> KSs : SCIP index handle
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceUnit, slot=CodeUnit, ...)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceRelation,\n   slot=SymbolRef | TypeHierarchyEdge | ImplementationEdge | ImportEdge, ...)
+
+  else ConfigInterfaceKS fires (BOTTOM_UP)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:SourceInventory view)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceInventory, slot=ConfigEntry, ...)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceInterface,\n   slot=OpenApiOperation | KafkaTopic | DbTable, ...)
+
+  else JoernCallGraphKS fires (BOTTOM_UP)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:SourceUnit view)
+    KSs -> ExtT : execve joern-parse / joern-export (sandboxed)
+    ExtT -> BS : write CPG outputs
+    ExtT --> KSs : CPG handle
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceRelation, slot=CallEdge | DataflowEdge, ...)
+
+  else InterfaceLiftKS fires (BOTTOM_UP)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (contributionSlot={panel:itip:SourceInterface, slot:...},\n   post={..., evidence:[...]})
+
+  else GsmIdentificationKS fires (BOTTOM_UP)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Source* views)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (contributionSlot={panel:itip:Definition, slot:Claim},\n   post={subjectKind, identityKey, supportingSourceIds, ...},\n   derivedContribution=[bb://itip/blackboard/SourceInterface/.../#contrib/...])
+
+  else GsmReconciliationKS fires (BOTTOM_UP)
+    KSs -> API : GET /blackboards/{bbId}/contributions\n  (filter: panel=itip:Definition, slot=Claim, peers)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Definition, slot=Merge,\n   post={supersedesIdentityKeys[...], targetIdentityKey})
+
+  else ArchetypeMatchingKS fires (BOTTOM_UP)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Definition view)
+    KSs -> DefExp : navigate DefMan archetypes (read-only)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Archetype, slot=Application,\n   post={archetypeRef})
+
+  else StatementShapingKS fires (BOTTOM_UP)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Archetype view)
+    alt LLM-driven
+      KSs -> Inf : completeStatement(identity)
+      Inf --> KSs : InferenceResult\n  (carry cacheKey for deterministic replay)
+    else deterministic
+      KSs -> KSs : structural extraction from\n  resolved itip:Source* views
+    end
+    KSs -> JV : incremental archetype-schema check (client-side)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Statement, slot=Draft,\n   post={statement, completeness, shapingMethod, evidence:[...]})
+
+  else GranularityKS fires (TOP_DOWN)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Statement view + peer identities)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Definition, slot=Verdict,\n   post={verdict:keep|drop|splitInto|mergeWith, ...})
+
+  else ConfidenceSynthesisKS fires
+    KSs -> API : GET /blackboards/{bbId}/contributions\n  (panel=itip:Statement, identity, NOT resolved -- needs diversity)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Statement, slot=Draft,\n   post={...synthesised confidence + aggregated evidence})
+  end
+
+  note over API, Store
+    Substrate-side handling of every contributions POST above:
+      API -> Val : validate(post vs slot.schemaUri,
+                            status=OPEN,
+                            derivedContribution[] same-Bb)
+      alt accepted
+        Val -> Store : append contribution (timestamp)
+                    + audit-ledger entry (POSTED)
+        Val --> API : 201 + contributionId
+      else schema fail / cross-Bb derived URI
+        Val --> API : 422 + diagnostics (NOT persisted)
+      else blackboard not OPEN
+        Val --> API : 409
+      end
+  end note
+end
+
+== Seal (client asserts done) ==
+
+RD -> API : POST /blackboards/{bbId}/seal\n  Authorization: Bearer <bb:seal scope>\n  If-Match: <ETag>
+API -> Seal : transition Blackboard -> SEALING
+Seal -> Store : reject further writes (409)
+Seal -> Store : freeze contribution stream\n(byte-stable order:\npanel, slot, timestamp, id)
+Seal -> Store : audit: seal event
+Seal -> Store : Blackboard -> SEALED (sealTimestamp)
+Seal --> API : 200 + sealTimestamp
+API --> RD : 200 (status=SEALED)
+
+== Read sealed contribution stream + reduce + register (client-side) ==
+
+RD -> API : GET /blackboards/{bbId}/contributions\n  ?panel=&slot=  (paginated;\n  byte-stable on SEALED Bb)
+API -> Store : load sealed stream slice
+API --> RD : Contribution[] (sealed stream slice)
+RD -> Red : reduce per (panel, slot, identityKey)\n  using per-slot client policy\n  (highestConfidence / collectAll / compose / ...);\n  log (reducerId, version, params, inputContributionURIs[],\n       outputValue) for replay
+Red --> RD : reducedView
+RD -> PIPE : validate(reducedView) + register(Ascriptions)\n  to Definition Manager
+
+note over PIPE
+  Client-side. The substrate has no knowledge of "Ascription",
+  "Definition Manager", or any GSM construct beyond opaque slot
+  values. Reduction (winner / merge / compose per slot) is itself
+  a client-controller process; the substrate provides only the
+  byte-stable sealed contribution stream as the replay anchor.
+  Validation against archetype schemas and registration to
+  Definition Manager are entirely client-side concerns.
+
+  Optional: the client MAY post terminal contributions on a
+  `<client>:Resolved.*` panel BEFORE seal so the reduction output
+  is itself a first-class auditable Bb citizen. The substrate
+  enforces no cardinality; the client reducer decides per-slot
+  single-/many-valuedness.
+
+  Auditors can replay the entire client Run via
+  `GET /blackboards/{bbId}/audit` plus the client's reducer
+  process log.
+end note
+
+== Blackboard isolation (no chaining) ==
+
+note over RD, API
+  Each Blackboard is **fully isolated** on the substrate side. If
+  a client flow needs another stage, the client creates another
+  Blackboard independently and feeds it from the prior reducedView
+  client-side and out-of-band. The substrate exposes no
+  inter-Blackboard relation; `Contribution.derivedContribution[]`
+  MUST reference contributions in the SAME Blackboard (cross-Bb
+  URIs are rejected with 422). Cross-Bb lineage is recorded in the
+  client's own log, not in the substrate.
+end note
+
+@enduml

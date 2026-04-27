@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceInventory/ModuleSpec/v1",
+  "title": "ModuleSpecContribution",
+  "description": "A build/package module descriptor declared by the repo (pom.xml, build.gradle, package.json, pyproject.toml, go.mod, Cargo.toml, ...).",
+  "type": "object",
+  "required": [
+    "path",
+    "ecosystem",
+    "name"
+  ],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path to the module descriptor."
+    },
+    "ecosystem": {
+      "type": "string",
+      "enum": [
+        "maven",
+        "gradle",
+        "npm",
+        "pypi",
+        "go",
+        "cargo",
+        "nuget",
+        "rubygems",
+        "composer",
+        "other"
+      ]
+    },
+    "name": {
+      "type": "string",
+      "description": "Module / artifact name."
+    },
+    "version": {
+      "type": "string"
+    },
+    "groupId": {
+      "type": "string",
+      "description": "For Maven/Gradle ecosystems."
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Declared dependencies (not necessarily resolved).",
+      "items": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": true,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string"
+          },
+          "scope": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}

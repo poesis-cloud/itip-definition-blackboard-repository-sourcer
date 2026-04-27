@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/SourceRelation/ImportEdge/v1",
+  "title": "ImportEdgeContribution",
+  "description": "An import / use directive linking a module/file to an imported symbol or module.",
+  "type": "object",
+  "required": [
+    "fromSymbol",
+    "toSymbol"
+  ],
+  "properties": {
+    "fromSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the source endpoint (must resolve to a SourceUnit.CodeUnit in this Bb)."
+    },
+    "toSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the target endpoint (must resolve to a SourceUnit.CodeUnit in this Bb)."
+    },
+    "alias": {
+      "type": "string",
+      "description": "Local alias when present."
+    },
+    "path": {
+      "type": "string",
+      "description": "Path of the file containing the import directive."
+    }
+  },
+  "additionalProperties": false
+}
