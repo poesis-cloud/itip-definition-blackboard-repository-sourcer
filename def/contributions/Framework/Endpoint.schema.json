@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Framework/Endpoint/v1",
+  "title": "EndpointContribution",
+  "description": "A code-declared remote-callable endpoint: HTTP/HTTPS route, gRPC method, GraphQL resolver, message-handler endpoint, etc. Pattern-C universal slot (§8bis Rule 2). Producers (techno-specific KSs, Rule 1): `SpringScanKS` (Spring MVC/WebFlux today); future `JaxRsScanKS`, `MicronautScanKS`, `QuarkusScanKS`, `FastApiScanKS`, `ExpressScanKS`, `GrpcScanKS`, etc. all populate the same envelope.",
+  "type": "object",
+  "required": [
+    "handlerSymbol",
+    "framework",
+    "protocol"
+  ],
+  "properties": {
+    "handlerSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the handler method/function (back-pointer to Index.ScipSymbol). Pattern-C back-pointer (§8bis Rule 2)."
+    },
+    "containerSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the enclosing controller / resource / router class, when applicable."
+    },
+    "framework": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2). Open enum tagging the producer techno.",
+      "enum": [
+        "spring-mvc",
+        "spring-webflux",
+        "jaxrs",
+        "micronaut",
+        "quarkus",
+        "fastapi",
+        "express",
+        "koa",
+        "gin",
+        "actix",
+        "grpc",
+        "graphql",
+        "other"
+      ]
+    },
+    "protocol": {
+      "type": "string",
+      "enum": [
+        "http",
+        "grpc",
+        "graphql",
+        "websocket",
+        "other"
+      ]
+    },
+    "httpMethods": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS", "ANY"]
+      },
+      "description": "HTTP methods bound by this endpoint. Required when protocol=http."
+    },
+    "path": {
+      "type": "string",
+      "description": "Route path / template (e.g. '/users/{id}', '/api/v1/orders'). Required when protocol=http or graphql."
+    },
+    "consumes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Accepted media types (e.g. 'application/json')."
+    },
+    "produces": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Returned media types."
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2). Framework-specific facts that don't fit the universal core (e.g. Spring `@PreAuthorize` SpEL, JAX-RS `@RolesAllowed`, FastAPI `dependencies=[...]`, gRPC service descriptor index).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

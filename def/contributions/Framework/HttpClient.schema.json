@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Framework/HttpClient/v1",
+  "title": "HttpClientContribution",
+  "description": "A code-declared outbound HTTP client binding to a remote API: Spring `@FeignClient` / `WebClient` / `RestClient`, OpenFeign, Retrofit, Axios instance, Python `httpx.Client`, Go `http.Client` wrapper, etc. Pattern-C universal slot (§8bis Rule 2). Producers (Rule 1): `SpringScanKS` (Feign/RestClient today); future framework-specific KSs.",
+  "type": "object",
+  "required": [
+    "clientSymbol",
+    "framework"
+  ],
+  "properties": {
+    "clientSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the client interface / class / instance. Pattern-C back-pointer (§8bis Rule 2)."
+    },
+    "framework": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2).",
+      "enum": [
+        "spring-feign",
+        "openfeign",
+        "spring-restclient",
+        "spring-webclient",
+        "spring-resttemplate",
+        "retrofit",
+        "axios",
+        "ky",
+        "httpx",
+        "requests",
+        "other"
+      ]
+    },
+    "baseUrl": {
+      "type": "string",
+      "description": "Static base URL when declarable (literal, configuration-key reference, or service-discovery name)."
+    },
+    "calls": {
+      "type": "array",
+      "description": "Declared remote calls.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["methodSymbol"],
+        "properties": {
+          "methodSymbol": { "type": "string" },
+          "httpMethod": {
+            "type": "string",
+            "enum": ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"]
+          },
+          "path": { "type": "string" }
+        }
+      }
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2). E.g. Feign `configuration` class, Retrofit converters, Axios interceptors, mTLS / OAuth scopes.",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

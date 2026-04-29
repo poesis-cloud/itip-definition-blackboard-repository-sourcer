@@ -54,14 +54,21 @@ note over RD, Store
   Run/Phase/chaining/correlation concept; each Blackboard is fully
   isolated. `runId` and the DAG between KSs are purely client-side.
 
-  Panels (client-declared, see `panels.puml`):
-  - `itip:SourceInventory`, `itip:SourceUnit`,
-    `itip:SourceRelation`, `itip:SourceInterface`
-  - `itip:Definition`, `itip:Archetype`, `itip:Statement`
+  Panels (client-declared, see `components.puml`):
+  - Repository-analysis (4 panels + 1 cross-cutting):
+    `itip:Repository`,
+    `itip:Framework`, `itip:Iac`,
+    `itip:CodeGraph`
+  - GSM-spine (3 panels):
+    `itip:Definition`, `itip:Archetype`, `itip:Statement`
 
-  KS catalogue:
-  - Discovery / lift: `RepoInventoryKS`, `ScipIngestKS`,
-    `ConfigInterfaceKS`, `JoernCallGraphKS`, `InterfaceLiftKS`
+  KS catalogue (loaded by support modules):
+  - Repository-analysis (core/java/spring/iac in v1):
+    `FileKS`, `SbomKS`, `ConfigKS`,
+    `ScipJavaKS`, `MavenProjectKS`, `GradleProjectKS`,
+    `SpringScanKS`, `IacScanKS`,
+    `JoernKS`, `DeploymentBindingKS`,
+    `CommunityKS`, `ProcessKS`
   - GSM-spine:        `GsmIdentificationKS`, `GsmReconciliationKS`,
                       `ArchetypeMatchingKS`, `StatementShapingKS`,
                       `GranularityKS` (TOP_DOWN), `ConfidenceSynthesisKS`
@@ -81,7 +88,7 @@ RD -> RD : derive scope (include/exclude globs)\n  + profile
 
 == Declare topology (before first contribution) ==
 
-RD -> API : POST /blackboards/{bbId}/panels\n  PanelDeclaration[] (7 panels: 4 itip:Source* + 3 GSM-spine,\n  single DAG)\n  If-Match: <ETag>
+RD -> API : POST /blackboards/{bbId}/panels\n  PanelDeclaration[] (8 panels: 3 itip:Repository/Index/Framework\n  + 1 itip:Iac + 1 itip:CodeGraph cross-cutting + 3 GSM-spine,\n  single DAG)\n  If-Match: <ETag>
 API -> PanelReg : register panels
 PanelReg -> PanelReg : validate client-namespacing\n  + per-slot schemaUri form
 PanelReg -> Store : persist panels + slots
@@ -105,37 +112,78 @@ loop until quiescence OR client-side maxIterations
 
   RD -> KSs : fire eligible KSs (client-internal)
 
-  alt RepoInventoryKS fires (BOTTOM_UP)
+  alt FileKS / SbomKS fire (BOTTOM_UP, module:core)
     KSs -> ExtT : execve tokei / syft (sandboxed)
     ExtT -> BS : write tool outputs
     ExtT --> KSs : output handles
-    KSs -> API : POST /blackboards/{bbId}/contributions\n  (contributionSlot={panel:itip:SourceInventory,\n     slot=FileTreeNode | GitCommit | ModuleSpec | LanguageClassification | FileMetrics | SbomComponent},\n   post={...})
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Repository, slot=FileNode, ...)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Index, slot=Sbom,\n   post={blobHandle, sha256, sizeBytes, tool:{name:'syft',version}, format:'syft-json', ...})
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Repository, slot=SbomComponent, ...)  // semantic projection of Index.Sbom
 
-  else ScipIngestKS fires (BOTTOM_UP)
-    KSs -> ExtT : execve scip-{java|typescript|python|go} (sandboxed)
+  else ScipJavaKS fires (BOTTOM_UP, module:java)
+    KSs -> ExtT : execve scip-java (sandboxed)
     ExtT -> BS : write SCIP index
-    ExtT --> KSs : SCIP index handle
-    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceUnit, slot=CodeUnit, ...)
-    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceRelation,\n   slot=SymbolRef | TypeHierarchyEdge | ImplementationEdge | ImportEdge, ...)
+    ExtT --> KSs : SCIP index handle (sha256)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Index, slot=Scip,\n   post={blobHandle, sha256, sizeBytes,\n         indexer:{name:'scip-java',version}, projectRoot, indexedRevision,\n         documentCount, symbolCount, ...})
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Index,\n   slot=ScipDocument | ScipSymbol | ScipOccurrence | ScipExternalSymbol, ...)\n  // SCIP-mirror projections of Index.Scip (one slot per top-level SCIP record type)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:CodeGraph,\n   slot=SymbolRef | TypeHierarchyEdge | ImplementationEdge | ImportEdge, ...)
 
-  else ConfigInterfaceKS fires (BOTTOM_UP)
-    KSs -> API : GET /blackboards/{bbId}/state  (live itip:SourceInventory view)
-    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceInventory, slot=ConfigEntry, ...)
-    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceInterface,\n   slot=OpenApiOperation | KafkaTopic | DbTable, ...)
+  else MavenProjectKS fires (BOTTOM_UP, module:maven)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Repository, slot=Project,\n   post={buildTool:maven, id:'maven:g:a:v', ...})
 
-  else JoernCallGraphKS fires (BOTTOM_UP)
-    KSs -> API : GET /blackboards/{bbId}/state  (live itip:SourceUnit view)
+  else GradleProjectKS fires (BOTTOM_UP, module:gradle)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Repository, slot=Project,\n   post={buildTool:gradle, id:'gradle::libs:core', ...})
+
+  else ConfigKS fires (BOTTOM_UP, module:core)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Repository view)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Repository, slot=ConfigEntry, ...)
+
+  else SpringScanKS fires (BOTTOM_UP, module:spring)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Index view --\n     reads `itip:Index.Scip` and opens its `nativeAttributes.blobHandle`)
+    note right of KSs
+      **SCIP consumer** (no own Java parser).
+      Streams `Document` messages from the raw `.scip` protobuf in
+      the BundleStore, filters symbols by Spring annotations,
+      projects to `itip:Framework.*`. Reuses SCIP `symbol` and
+      `range` verbatim so Framework facts join with
+      `itip:Index.Scip*` (mirror) and `itip:CodeGraph.*` on shared
+      identity.
+    end note
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Framework,\n   slot=Endpoint | DiComponent | ConfigurationProperty\n        | PersistenceEntity | PersistenceRepository\n        | MessageConsumer | MessageProducer\n        | HttpClient | ScheduledTask, ...)
+
+  else IacScanKS fires (BOTTOM_UP, module:iac)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Repository view)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Iac,\n   slot=IacResource | IacModule | IacVariable | IacOutput | IacProviderRef, ...)
+
+  else JoernKS fires (BOTTOM_UP, module:java)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Index view)
     KSs -> ExtT : execve joern-parse / joern-export (sandboxed)
     ExtT -> BS : write CPG outputs
-    ExtT --> KSs : CPG handle
-    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:SourceRelation, slot=CallEdge | DataflowEdge, ...)
+    ExtT --> KSs : CPG handle (sha256)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Index, slot=JoernCpg,\n   post={blobHandle, sha256, sizeBytes,\n         tool:{name:'joern-parse',version}, projectRoot, indexedRevision, ...})
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:CodeGraph, slot=CallEdge | DataflowEdge, ...)  // projection of Index.JoernCpg
 
-  else InterfaceLiftKS fires (BOTTOM_UP)
-    KSs -> API : POST /blackboards/{bbId}/contributions\n  (contributionSlot={panel:itip:SourceInterface, slot:...},\n   post={..., evidence:[...]})
+  else CommunityKS fires (BOTTOM_UP, module:graph-analysis)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:CodeGraph view --\n     reads SymbolRef / CallEdge / ImportEdge already published\n     by ScipJavaKS / JoernKS)
+    KSs -> KSs : run leidenalg in in-process Python sandbox\n  (deterministic seed; cacheKey = (algo-version, seed,\n   HEAD SHA, edge-set hash))
+    note right of KSs
+      Determinism marker (cacheKey) MANDATORY -- Leiden is
+      stochastic. See SKILL section 7b.5.
+    end note
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:CodeGraph, slot=Community,\n   post={algorithm:'leiden', members:[<scip-monikers>],\n         modularityScore, cacheKey, ...})
+
+  else ProcessKS fires (BOTTOM_UP, module:graph-analysis)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:CodeGraph + itip:Framework views --\n     reads CallEdge plus entry points: Endpoint /\n     MessageConsumer / ScheduledTask)
+    KSs -> KSs : DFS over CallEdge from each entry point\n  (depth & cycle guards; cacheKey = (extractor-version,\n   traversal-params, HEAD SHA, edge-set hash))
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:CodeGraph, slot=Process,\n   post={extractor:'dfs-call-edge',\n         entryPoint:{kind, symbol, endpointRef},\n         steps:[{symbol, depth, viaCallEdge}], ...})
+
+  else DeploymentBindingKS fires (BOTTOM_UP, module:iac; requires framework module loaded)
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Framework + itip:Iac views)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:CodeGraph, slot=DeploymentEdge, ...)
 
   else GsmIdentificationKS fires (BOTTOM_UP)
-    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Source* views)
-    KSs -> API : POST /blackboards/{bbId}/contributions\n  (contributionSlot={panel:itip:Definition, slot:Claim},\n   post={subjectKind, identityKey, supportingSourceIds, ...},\n   derivedContribution=[bb://itip/blackboard/SourceInterface/.../#contrib/...])
+    KSs -> API : GET /blackboards/{bbId}/state  (live itip:Repository + itip:Index + itip:Framework + itip:Iac + itip:CodeGraph views)
+    KSs -> API : POST /blackboards/{bbId}/contributions\n  (contributionSlot={panel:itip:Definition, slot:Claim},\n   post={subjectKind, identityKey, supportingSourceIds, ...},\n   derivedContribution=[bb://itip/blackboard/Framework/.../#contrib/...])
 
   else GsmReconciliationKS fires (BOTTOM_UP)
     KSs -> API : GET /blackboards/{bbId}/contributions\n  (filter: panel=itip:Definition, slot=Claim, peers)
@@ -152,7 +200,7 @@ loop until quiescence OR client-side maxIterations
       KSs -> Inf : completeStatement(identity)
       Inf --> KSs : InferenceResult\n  (carry cacheKey for deterministic replay)
     else deterministic
-      KSs -> KSs : structural extraction from\n  resolved itip:Source* views
+      KSs -> KSs : structural extraction from\n  resolved itip:Repository + itip:Index + itip:Framework + itip:Iac + itip:CodeGraph views
     end
     KSs -> JV : incremental archetype-schema check (client-side)
     KSs -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Statement, slot=Draft,\n   post={statement, completeness, shapingMethod, evidence:[...]})
@@ -234,6 +282,24 @@ note over RD, API
   MUST reference contributions in the SAME Blackboard (cross-Bb
   URIs are rejected with 422). Cross-Bb lineage is recorded in the
   client's own log, not in the substrate.
+end note
+
+== Licensing attention point (design-time, MUST resolve before commercial ship) ==
+
+note over RD, ExtT #FFD7D5
+  **External-tool licensing audit -- BLOCKING for any commercial Poesis distribution.**
+
+  KSs in the `graph-analysis` module embed third-party engines
+  whose licenses constrain redistribution:
+
+  | KS              | Tool                          | License            | Concern |
+  |-----------------|-------------------------------|--------------------|---------|
+  | `JoernKS`       | `joern-parse`, `joern-export` | Apache-2.0         | OK (sandboxed execve, no static link). |
+  | `CommunityKS`   | `leidenalg` (Python)          | **GPL-3.0**        | **ATTENTION** -- in-process Python embedding may trigger copyleft on the host process. Mitigations (pick one before ship): (a) replace with `python-louvain` (BSD) or `cdlib` (BSD-3); (b) isolate `leidenalg` behind a separate sandboxed subprocess so the host process is not "combined work"; (c) accept GPL-3.0 obligations for the distributed binary. |
+  | `ProcessKS`     | none (pure in-process DFS)    | n/a                | OK. |
+
+  **Action owner:** product/legal review before first commercial release.
+  **Default safe path** (recommended): swap `leidenalg` -> `python-louvain` in `CommunityKS`; accept slightly lower modularity quality. This keeps the entire `graph-analysis` module under permissive licenses.
 end note
 
 @enduml

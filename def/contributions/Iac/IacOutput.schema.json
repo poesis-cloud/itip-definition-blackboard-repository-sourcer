@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Iac/IacOutput/v1",
+  "title": "IacOutputContribution",
+  "description": "An output value of an IacModule (Terraform output, CloudFormation output, Helm computed value). Outputs are part of the module's external contract. Pattern-C universal slot (§8bis Rule 2). Producers (Rule 1): `IacScanKS` today.",
+  "type": "object",
+  "required": [
+    "moduleName",
+    "iacTool",
+    "name"
+  ],
+  "properties": {
+    "moduleName": {
+      "type": "string",
+      "description": "Name of the enclosing IacModule. Pattern-C back-pointer (§8bis Rule 2)."
+    },
+    "iacTool": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2).",
+      "enum": [
+        "terraform",
+        "helm",
+        "kustomize",
+        "cloudformation",
+        "pulumi",
+        "ansible",
+        "bicep",
+        "cdk",
+        "other"
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "valueExpression": {
+      "type": "string",
+      "description": "Source expression text (e.g. 'aws_s3_bucket.main.arn')."
+    },
+    "sensitive": {
+      "type": "boolean"
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

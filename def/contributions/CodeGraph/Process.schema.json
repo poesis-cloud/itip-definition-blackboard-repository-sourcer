@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/CodeGraph/Process/v1",
+  "title": "ProcessContribution",
+  "description": "An ordered chain of code-graph symbols representing an end-to-end execution flow rooted at an entry point (typically an HTTP `Endpoint`, a message consumer, a scheduled task, or an MCP tool handler). Universal envelope (Pattern-C, SKILL §8bis Rule 2). Producers: `ProcessKS` (DFS over `CodeGraph.CallEdge`), future Joern path-query KS, etc. Processes are a primary input signal to `GranularityKS` and `ArchetypeMatchingKS` (an Archetype's `Application` often corresponds to a coherent set of Processes).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "extractor",
+    "entryPoint",
+    "steps"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable client-defined identity within (panel, slot). Suggested form: '<extractor>:<entryPointSymbol>:<chainHash>'. Used as the contribution identityKey."
+    },
+    "extractor": {
+      "type": "string",
+      "description": "Producer label (analogue of SCIP `SymbolInformation.kind`). Open enum.",
+      "enum": [
+        "dfs-call-edge",
+        "joern-reachability",
+        "static-trace",
+        "other"
+      ]
+    },
+    "entryPoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "symbol"
+      ],
+      "description": "Where the process starts. The `symbol` SHOULD resolve to a contribution in a code-bearing slot of the same Blackboard.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "http-endpoint",
+            "message-consumer",
+            "scheduled-task",
+            "mcp-tool",
+            "main-method",
+            "other"
+          ]
+        },
+        "symbol": {
+          "type": "string",
+          "description": "SCIP-style symbol moniker of the entry function/method."
+        },
+        "endpointRef": {
+          "type": "string",
+          "description": "Optional cross-reference to a contribution in `Framework.Endpoint` / `Framework.MessageConsumer` / `Framework.ScheduledTask` (URI form: `bb://...#contrib/<id>`)."
+        }
+      }
+    },
+    "steps": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered list of symbols traversed from the entry point. Each step SHOULD resolve to a contribution in `Index.ScipSymbol` (or `CodeGraph.SymbolRef` for non-SCIP languages) of the same Blackboard. Step 0 is the entry-point symbol itself.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "symbol",
+          "depth"
+        ],
+        "properties": {
+          "symbol": {
+            "type": "string"
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "viaCallEdge": {
+            "type": "string",
+            "description": "Optional URI of the `CodeGraph.CallEdge` contribution that produced this step."
+          }
+        }
+      }
+    },
+    "truncated": {
+      "type": "boolean",
+      "description": "True if traversal hit a depth/cycle/time guard before exhausting reachable callees."
+    },
+    "cacheKey": {
+      "type": "string",
+      "description": "Determinism marker (SKILL §7b.5) for non-deterministic extractors: SHOULD encode (extractor version, traversal params, repo HEAD SHA, input edge-set hash)."
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Free-form escape hatch for extractor-specific attributes (max depth, dataflow tags, etc.). Tool-agnostic consumers ignore.",
+      "additionalProperties": true
+    }
+  }
+}

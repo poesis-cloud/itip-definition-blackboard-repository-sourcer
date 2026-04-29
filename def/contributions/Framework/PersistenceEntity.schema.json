@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Framework/PersistenceEntity/v1",
+  "title": "PersistenceEntityContribution",
+  "description": "A code-declared persistent entity: JPA/Hibernate `@Entity`, MikroORM entity, SQLAlchemy `Base` subclass, Sequelize `Model.init`, Active Record class, etc. Pattern-C universal slot (§8bis Rule 2). Producers (Rule 1): `SpringScanKS` (JPA/Hibernate today); future `MikroOrmScanKS`, `SqlAlchemyScanKS`, `SequelizeScanKS`, `ActiveRecordScanKS`, etc.",
+  "type": "object",
+  "required": [
+    "entitySymbol",
+    "framework"
+  ],
+  "properties": {
+    "entitySymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the entity class. Pattern-C back-pointer (§8bis Rule 2)."
+    },
+    "framework": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2).",
+      "enum": [
+        "jpa",
+        "hibernate",
+        "mikroorm",
+        "sqlalchemy",
+        "sequelize",
+        "typeorm",
+        "active-record",
+        "django-orm",
+        "other"
+      ]
+    },
+    "tableName": {
+      "type": "string"
+    },
+    "schemaName": {
+      "type": "string"
+    },
+    "idAttributes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Attribute names (or column names) participating in the primary key."
+    },
+    "attributes": {
+      "type": "array",
+      "description": "Mapped attributes / columns.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name"],
+        "properties": {
+          "name": { "type": "string" },
+          "columnName": { "type": "string" },
+          "valueType": { "type": "string" },
+          "nullable": { "type": "boolean" }
+        }
+      }
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2). Framework-specific facts (e.g. Hibernate `@Cacheable`, JPA inheritance strategy, SQLAlchemy `__mapper_args__`).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

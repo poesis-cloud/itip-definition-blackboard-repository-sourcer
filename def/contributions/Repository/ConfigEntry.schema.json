@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Repository/ConfigEntry/v1",
+  "title": "ConfigEntryContribution",
+  "description": "A single configuration entry parsed from a config artifact (application.yaml, .env, kubernetes manifests, terraform vars, ...). Identity is (path, key). Pattern-C universal slot (§8bis Rule 2). Producers (techno-specific KSs, Rule 1): `ConfigKS` today (multi-format parser); future format-specific KSs may post here. The `configFormat` discriminator tags the source vocabulary.",
+  "type": "object",
+  "required": [
+    "path",
+    "configFormat",
+    "key"
+  ],
+  "properties": {
+    "path": {
+      "type": "string",
+      "description": "Repo-relative path to the config file. Pattern-C back-pointer (§8bis Rule 2)."
+    },
+    "configFormat": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2). Source-file format the producer parsed.",
+      "enum": [
+        "yaml",
+        "json",
+        "toml",
+        "properties",
+        "env",
+        "hcl",
+        "ini",
+        "xml",
+        "other"
+      ]
+    },
+    "key": {
+      "type": "string",
+      "description": "Dotted/slash key path within the file."
+    },
+    "value": {
+      "description": "Raw value (any JSON type). Secret-detection / redaction is client-side.",
+      "oneOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "null"
+        },
+        {
+          "type": "array"
+        },
+        {
+          "type": "object"
+        }
+      ]
+    },
+    "secretSuspected": {
+      "type": "boolean",
+      "description": "Client-side heuristic flag; the value MAY be redacted when true."
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2). Format-specific fields (e.g. YAML anchors, HCL block-type, JSON-pointer flavour, `.env` quoting style).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

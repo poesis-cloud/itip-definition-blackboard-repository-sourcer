@@ -33,7 +33,7 @@
       "items": {
         "type": "string"
       },
-      "description": "Ids of SourceUnit / SourceInterface / SourceInventory contributions supporting this Claim."
+      "description": "Ids of itip:Repository / itip:Index / itip:Framework / itip:Iac / itip:CodeGraph contributions supporting this Claim."
     },
     "rationale": {
       "type": "string"

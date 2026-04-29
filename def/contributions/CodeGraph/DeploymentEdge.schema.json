@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/CodeGraph/DeploymentEdge/v1",
+  "title": "DeploymentEdgeContribution",
+  "description": "A deployment edge linking a code/build artifact to an IaC resource that deploys/hosts it. Pattern-C universal slot (§8bis Rule 2). Producers (Rule 1): `DeploymentBindingKS` today (cross-slot reasoner over Code + Iac).",
+  "type": "object",
+  "required": [
+    "fromSymbol",
+    "toSymbol",
+    "producerKind"
+  ],
+  "properties": {
+    "fromSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the source endpoint (must resolve to a Index.ScipSymbol (or other code-bearing slot) in this Bb)."
+    },
+    "toSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the target endpoint (must resolve to a Index.ScipSymbol (or other code-bearing slot) in this Bb)."
+    },
+    "iacKind": {
+      "type": "string",
+      "enum": [
+        "terraform",
+        "cloudformation",
+        "kubernetes",
+        "helm",
+        "pulumi",
+        "ansible",
+        "bicep",
+        "other"
+      ]
+    },
+    "rationale": {
+      "type": "string",
+      "description": "How the link was established (e.g. matching image tag, container name, S3 bucket name)."
+    },
+    "producerKind": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2).",
+      "enum": ["deploymentBinding", "other"]
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

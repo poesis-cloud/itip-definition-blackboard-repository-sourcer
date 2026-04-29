@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Framework/ConfigurationProperty/v1",
+  "title": "ConfigurationPropertyContribution",
+  "description": "A code-side declaration that consumes a configuration value (e.g. Spring `@Value`/`@ConfigurationProperties`, FastAPI `Settings`, NestJS `ConfigService.get`, Micronaut `@Value`). Distinct from `Repository.ConfigEntry`, which captures the value as found in a config file: this slot captures the code's declared CONSUMPTION intent. Pattern-C universal slot (§8bis Rule 2). Producers (Rule 1): `SpringScanKS` today; future `MicronautScanKS`, `FastApiScanKS`, `NestJsScanKS`, etc.",
+  "type": "object",
+  "required": [
+    "consumerSymbol",
+    "framework",
+    "key"
+  ],
+  "properties": {
+    "consumerSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the field / parameter / function that consumes the configuration value. Pattern-C back-pointer (§8bis Rule 2)."
+    },
+    "framework": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2).",
+      "enum": [
+        "spring",
+        "micronaut",
+        "quarkus",
+        "fastapi",
+        "nestjs",
+        "django",
+        "rails",
+        "other"
+      ]
+    },
+    "key": {
+      "type": "string",
+      "description": "Configuration key as referenced by the code (e.g. 'app.feature.x', 'DATABASE_URL')."
+    },
+    "defaultValue": {
+      "description": "Inline default if declared at the consumption site.",
+      "oneOf": [
+        { "type": "string" },
+        { "type": "number" },
+        { "type": "boolean" },
+        { "type": "null" }
+      ]
+    },
+    "required": {
+      "type": "boolean"
+    },
+    "valueType": {
+      "type": "string",
+      "description": "Declared/expected type of the value (e.g. 'String', 'int', 'Duration', 'List<String>')."
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2). Framework-specific facts (e.g. Spring SpEL expression, `@ConfigurationProperties` prefix nesting, FastAPI `Field` validators).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

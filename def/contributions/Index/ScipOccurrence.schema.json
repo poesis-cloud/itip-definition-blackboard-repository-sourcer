@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Index/ScipOccurrence/v1",
+  "title": "ScipOccurrenceContribution",
+  "description": "Mirror of one SCIP `Occurrence` record (https://github.com/sourcegraph/scip): a single positional reference of a symbol within a document, carrying the symbol id, source range, role bitmask (Definition / Read / Write / Import / ...), syntax kind, and any per-occurrence diagnostics. The `occurrence` field is passed through verbatim from the SCIP index. Each contribution is one occurrence -- this is the grain at which `itip:CodeGraph.{CallEdge, DataflowEdge, ...}` cites code-side endpoints. identityKey: composite `(scipDocumentRelativePath, occurrence.symbol, occurrence.range)`. Producer rule: exactly ONE producer per (panel, slot, document); v1 producer is `ScipJavaKS`. Note: `range` is interpreted under the corresponding `Index.ScipDocument.positionEncoding`. Field-name convention: keys within `occurrence` MUST follow SCIP proto3 canonical-JSON camelCase encoding (e.g. `symbolRoles`, `syntaxKind`, `enclosingRange`, `overrideDocumentation`); producers emitting snake_case MUST normalize before contribution.",
+  "type": "object",
+  "required": [
+    "scipDocumentRelativePath",
+    "occurrence"
+  ],
+  "properties": {
+    "scipDocumentRelativePath": {
+      "type": "string",
+      "description": "Repo-relative POSIX path of the SCIP `Document` containing this occurrence. Back-pointer to the corresponding `Index.ScipDocument` contribution."
+    },
+    "occurrence": {
+      "type": "object",
+      "description": "Verbatim SCIP `Occurrence` as JSON. Required keys per SCIP spec: 'range' (3- or 4-int array [startLine, startCol, endLine?, endCol]) and 'symbol' (the SCIP symbol id). Other keys (symbol_roles, syntax_kind, diagnostics, override_documentation, enclosing_range) preserved as-is. additionalProperties: true to absorb upstream additions.",
+      "required": [
+        "range",
+        "symbol"
+      ],
+      "properties": {
+        "range": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "minItems": 3,
+          "maxItems": 4,
+          "description": "Verbatim SCIP `Occurrence.range`. Three ints `[startLine, startCol, endCol]` when start and end share a line, four ints `[startLine, startCol, endLine, endCol]` otherwise."
+        },
+        "symbol": {
+          "type": "string",
+          "description": "SCIP symbol id (the global moniker)."
+        },
+        "enclosingRange": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "minItems": 3,
+          "maxItems": 4,
+          "description": "Verbatim SCIP `Occurrence.enclosing_range` (camelCase form). Same 3-or-4-int packing as `range`: `[startLine, startCol, endCol]` when start and end share a line, `[startLine, startCol, endLine, endCol]` otherwise. Identifies the syntactic enclosure (method/class body) containing this occurrence."
+        }
+      },
+      "additionalProperties": true
+    },
+    "scipIndexerVersion": {
+      "type": "string",
+      "description": "Version string of the SCIP indexer that produced the record. Optional; useful for replay diagnostics."
+    }
+  },
+  "additionalProperties": false
+}

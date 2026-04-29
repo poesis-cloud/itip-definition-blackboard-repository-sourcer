@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Framework/PersistenceRepository/v1",
+  "title": "PersistenceRepositoryContribution",
+  "description": "A code-declared repository / DAO interface for an entity: Spring Data `JpaRepository`, MikroORM `EntityRepository`, SQLAlchemy session-scoped repository class, etc. Pattern-C universal slot (§8bis Rule 2). Producers (Rule 1): `SpringScanKS` today; future ORM-specific KSs.",
+  "type": "object",
+  "required": [
+    "repositorySymbol",
+    "framework",
+    "entitySymbol"
+  ],
+  "properties": {
+    "repositorySymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the repository / DAO interface or class. Pattern-C back-pointer (§8bis Rule 2)."
+    },
+    "framework": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2).",
+      "enum": [
+        "spring-data-jpa",
+        "spring-data-mongo",
+        "spring-data-r2dbc",
+        "mikroorm",
+        "sqlalchemy",
+        "typeorm",
+        "other"
+      ]
+    },
+    "entitySymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the managed entity (cross-ref to a Framework.PersistenceEntity)."
+    },
+    "queryMethods": {
+      "type": "array",
+      "description": "Declared query methods (derived or annotated).",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["methodSymbol"],
+        "properties": {
+          "methodSymbol": { "type": "string" },
+          "queryLanguage": {
+            "type": "string",
+            "enum": ["jpql", "sql", "hql", "mongo", "method-name", "criteria", "other"]
+          },
+          "queryText": { "type": "string" }
+        }
+      }
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

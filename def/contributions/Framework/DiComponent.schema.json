@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Framework/DiComponent/v1",
+  "title": "DiComponentContribution",
+  "description": "A dependency-injection-managed component: Spring `@Component`/`@Service`/`@Repository`/`@Bean`, JSR-330 `@Inject` target, NestJS provider, Symfony service, Guice binding, etc. Pattern-C universal slot (§8bis Rule 2). Producers (techno-specific KSs, Rule 1): `SpringScanKS` today; future `MicronautScanKS`, `QuarkusScanKS`, `NestJsScanKS`, etc.",
+  "type": "object",
+  "required": [
+    "componentSymbol",
+    "framework",
+    "scope"
+  ],
+  "properties": {
+    "componentSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the class / function whose instance is DI-managed. Pattern-C back-pointer (§8bis Rule 2)."
+    },
+    "framework": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2).",
+      "enum": [
+        "spring",
+        "micronaut",
+        "quarkus",
+        "guice",
+        "dagger",
+        "nestjs",
+        "symfony",
+        "other"
+      ]
+    },
+    "scope": {
+      "type": "string",
+      "description": "DI lifecycle scope, normalized to a universal vocabulary.",
+      "enum": [
+        "singleton",
+        "prototype",
+        "request",
+        "session",
+        "application",
+        "transient",
+        "other"
+      ]
+    },
+    "qualifier": {
+      "type": "string",
+      "description": "Optional name/qualifier under which the component is registered."
+    },
+    "factoryMethodSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the `@Bean`-style factory method when the component is produced by one (rather than scanned)."
+    },
+    "exposedTypes": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "SCIP symbol ids of the interfaces / supertypes the DI container exposes this component as."
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2). Framework-specific facts (e.g. Spring `@Profile`, `@Conditional*`, NestJS module scope, Quarkus `@Startup`).",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Index/ScipExternalSymbol/v1",
+  "title": "ScipExternalSymbolContribution",
+  "description": "Mirror of one element of SCIP `Index.external_symbols[]` (https://github.com/sourcegraph/scip): a `SymbolInformation` record describing a symbol that is referenced by this index but defined OUTSIDE the indexed project (JDK types, third-party library symbols resolved through Maven/Gradle classpath, etc.). Externals carry no source `Document` -- there is no `scipDocumentRelativePath` field, distinguishing this slot from `Index.ScipSymbol`. The `symbolInformation` field is passed through verbatim from the SCIP index. identityKey: `symbolInformation.symbol`. Producer rule: exactly ONE producer per (panel, slot, symbol); v1 producer is `ScipJavaKS`. Field-name convention: keys within `symbolInformation` MUST follow SCIP proto3 canonical-JSON camelCase encoding (e.g. `displayName`, `signatureDocumentation`); producers emitting snake_case MUST normalize before contribution.",
+  "type": "object",
+  "required": [
+    "symbolInformation"
+  ],
+  "properties": {
+    "symbolInformation": {
+      "type": "object",
+      "description": "Verbatim SCIP `SymbolInformation` as JSON, sourced from `Index.external_symbols[]`. Required key per SCIP spec: 'symbol' (the SCIP symbol id). Other keys (kind, displayName, signature_documentation, relationships, documentation, ...) preserved as-is. additionalProperties: true to absorb upstream additions.",
+      "required": [
+        "symbol"
+      ],
+      "properties": {
+        "symbol": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    },
+    "scipIndexerVersion": {
+      "type": "string",
+      "description": "Version string of the SCIP indexer that produced the record. Optional; useful for replay diagnostics."
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Framework/ScheduledTask/v1",
+  "title": "ScheduledTaskContribution",
+  "description": "A code-declared periodic task: Spring `@Scheduled`, Quartz `Job`, Celery `@app.task` with beat schedule, cron-style annotation, NestJS `@Cron`, etc. Pattern-C universal slot (§8bis Rule 2). Producers (Rule 1): `SpringScanKS` today; future framework-specific KSs.",
+  "type": "object",
+  "required": [
+    "taskSymbol",
+    "framework",
+    "scheduleKind"
+  ],
+  "properties": {
+    "taskSymbol": {
+      "type": "string",
+      "description": "SCIP symbol id of the scheduled method / function / job class. Pattern-C back-pointer (§8bis Rule 2)."
+    },
+    "framework": {
+      "type": "string",
+      "description": "Pattern-C discriminator (§8bis Rule 2).",
+      "enum": [
+        "spring-scheduled",
+        "quartz",
+        "celery-beat",
+        "nestjs-cron",
+        "kubernetes-cronjob",
+        "other"
+      ]
+    },
+    "scheduleKind": {
+      "type": "string",
+      "enum": ["cron", "fixed-rate", "fixed-delay", "calendar", "other"]
+    },
+    "cronExpression": {
+      "type": "string"
+    },
+    "fixedRateMillis": {
+      "type": "integer"
+    },
+    "fixedDelayMillis": {
+      "type": "integer"
+    },
+    "initialDelayMillis": {
+      "type": "integer"
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "nativeAttributes": {
+      "type": "object",
+      "description": "Pattern-C escape hatch (§8bis Rule 2). E.g. Quartz job-data map, Celery `routing_key`, k8s `concurrencyPolicy`.",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

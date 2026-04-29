@@ -21,184 +21,610 @@ skinparam classFontColor #24292F
 skinparam noteBackgroundColor #FFF8C5
 skinparam noteBorderColor #57606A
 
-frame "CD - ITIP Definition Blackboard Repository Sourcer components (client sourcer; REST-client to Definition Blackboard Manager)" {
+' Layout: left-to-right keeps KS->Slot fan-out horizontal.
+' Edges are angular (linetype ortho) per repo visual-theme convention.
+left to right direction
 
-  note as IntroNote
-    **ITIP Definition Blackboard Repository Sourcer** -- a client sourcer that turns a
-    code repository into GSM Ascriptions registered into the
-    Definition Manager. It is a separate process from the
-    [Definition Blackboard Manager](../../../sie/sie-definition-blackboard-manager/)
-    and speaks to it exclusively over REST.
+' ============================================================
+' FRAME 1 - Process & external (high-level only; no slot edges)
+' ============================================================
 
-    The sourcer owns:
-    - **the client Run concept** (the service has no Run resource;
-      a client Run is purely client-side state and creates exactly
-      one Blackboard, carrying all 7 panels),
-    - the Knowledge Source machinery (sandboxing, external tool
-      brokering, classloader -- client-internal concerns),
-    - the panel ontology (`blackboard/`),
-    - the **client controller / reducer** (post-seal: applies
-      per-slot reduction policy over the sealed contribution
-      stream; logs reducer runs for replay),
-    - the post-reduction pipeline (validation against
-      archetypes, registration into Definition Manager).
+frame "CD - ITIP Definition Blackboard Repository Sourcer - process & external dependencies" as F1 {
 
-    The blackboard service owns: REST resources, panel registry,
-    contribution validation, the Blackboard-seal lifecycle, and
-    the audit ledger. The service has NO Run, NO Phase, NO
-    chaining concept, NO resolver, NO reduction concept, and
-    NO cardinality enforcement (no `atMostOne`).
+  package "Client process" as CLIENT {
+    class RepoBootstrap            <<client-internal>>
+    class RunDriver                <<client-internal>>
+    class ClientReducer            <<client-internal,controller>>
+    class PostReductionPipeline    <<client-internal>>
+  }
+
+  package "External services / tools" as EXT {
+    class DefinitionBlackboardManager <<service,external>>
+    class DefinitionManager           <<service,external>>
+    class InferenceService            <<service,external>>
+    class ExternalTools               <<binaries,external>>
+  }
+
+  RepoBootstrap        --> RunDriver               : scope + profile
+  RunDriver            --> ClientReducer           : after Bb seal
+  ClientReducer        --> PostReductionPipeline   : reducedView
+  RunDriver            --> DefinitionBlackboardManager : REST (Bb / panels / contributions / seal)
+  ClientReducer        --> DefinitionBlackboardManager : GET sealed stream
+  PostReductionPipeline --> DefinitionManager      : register Ascriptions
+
+  note bottom of CLIENT
+    `RunDriver` schedules KSs (next frame).
+    `ClientReducer` applies per-slot reduction
+    over the sealed contribution stream.
+    `RepoBootstrap` posts NO contributions.
   end note
 
-  ' ============================================================
-  ' CLIENT SOURCER COMPONENTS
-  ' ============================================================
+  note bottom of EXT
+    KSs invoke `ExternalTools` (scip-*, joern,
+    syft, tokei) via `execve` allowlist.
+    In-process libs (**leidenalg** for
+    `CommunityKS`) run in the Python sandbox.
+    Only `StatementShapingKS` calls
+    `InferenceService`.
+  end note
+}
 
-  package "ITIP Definition Blackboard Repository Sourcer (client process)" as CLIENT {
+' ============================================================
+' FRAME 2 - Knowledge Sources, Contribution Slots, Panels
+'   relationships:
+'     KnowledgeSource ..> ContributionSlot   (writes; "contributionSlot")
+'     Panel  contains  ContributionSlot      (package nesting)
+'     Panel  -->  Panel                      (client-side DAG)
+' ============================================================
 
-    class RunDriver <<client-internal>> {
-      +start(repoConfig): RunHandle
-      +scheduleKSs()
-      +runReducer()
-      +postReductionPipeline()
+frame "CD - Knowledge Sources -> Contribution Slots <- Panels (single merged ontology view)" as F2 {
+
+  ' --------------------------------------------------------
+  ' KS CONTRACT - interface implemented by every KS class below,
+  ' plus the in-process context handed to KSs by the RunDriver.
+  ' All concrete KS classes in this frame realize <<KnowledgeSource>>.
+  ' --------------------------------------------------------
+
+  package "KS contract (client-internal)" as KSAPI <<contract>> {
+
+    abstract class KnowledgeSource <<abstract>> {
+      -definitionBlackboardManagerService : DefinitionBlackboardManagerService
+      -llmInferenceService : LlmInferenceService
+      -definitionManagerService : DefinitionManagerService
+      --
+      +getFqn() : String
+      +getTargetContributionSlots() : Set<ContributionSlot>
+      +isContributableBlackboard() : boolean
+      +contributeToBlackboard() : void
     }
-    note right of RunDriver
-      Top-level orchestrator. Owns the client `runId`.
-      Calls the SBM REST API to:
-      - POST /blackboards                         (create Bb;
-                                                    fully isolated)
-      - POST /blackboards/{bbId}/panels           (declare 7 panels)
-      - POST /blackboards/{bbId}/contributions    (KS posts)
-      - POST /blackboards/{bbId}/seal             (close Bb)
-      - GET  /blackboards/{bbId}/contributions    (sealed stream;
-                                                    fed to the
-                                                    client reducer)
+
+    class DefinitionBlackboardManagerService <<client-internal,rest-client>> {
+      +createBlackboard(name) : String
+      +declarePanels(bbId, panels[]) : void
+      +postContribution(bbId, slot, payload, identityKey, derivedFrom?) : void
+      +readContributions(bbId, panel, slot) : Stream<Contribution>
+      +getState(bbId) : BlackboardView
+      +seal(bbId) : void
+    }
+
+    class LlmInferenceService    <<client-internal,rest-client>>
+    class DefinitionManagerService <<client-internal,rest-client>>
+
+    KnowledgeSource *-- DefinitionBlackboardManagerService
+    KnowledgeSource *-- LlmInferenceService
+    KnowledgeSource *-- DefinitionManagerService
+  }
+
+  note right of KnowledgeSource
+    **KS authoring contract** (SKILL §7b)
+    - **`getFqn()`** : fully-qualified name, encodes
+      support module + KS id (e.g. `itip:maven:MavenProjectKS`).
+      Per Rule 1 (§8bis): techno-specific.
+    - **`getTargetContributionSlots()`** : closed set of
+      slots this KS writes. Per §7b.2, all slots MUST
+      belong to exactly ONE panel; the writes-panel is
+      derived from this set (and validated by `RunDriver`).
+    - **`isContributableBlackboard()`** : trigger
+      predicate (§7b.4). Returns true iff the current
+      Bb state makes this KS eligible to fire.
+    - **`contributeToBlackboard()`** : sole side-effect
+      channel (§7b.9). Reads/writes via the injected
+      `definitionBlackboardManagerService`. Direction
+      (BOTTOM_UP / TOP_DOWN) is derived from the
+      panel-DAG position of writes-panel vs. observed
+      reads. `llmInferenceService` is used only by
+      LLM-driven KSs (e.g. `StatementShapingKS`);
+      `definitionManagerService` is used by the
+      post-reduction pipeline.
+
+    **SCIP as identity backbone.** Every KS that
+    contributes facts about code elements (framework
+    projections, call/dataflow edges, communities,
+    processes) MUST reference those elements using
+    **SCIP symbol identifiers and SCIP source ranges**,
+    reused verbatim from the sealed `itip:Index.Scip*` mirror
+    contributions (`ScipDocument`/`ScipSymbol`/`ScipOccurrence`/
+    `ScipExternalSymbol`) produced by `Scip*KS`. Each panel owns
+    its own semantic schema, but **symbol identity is
+    shared**. Guarantees joinability across panels and
+    byte-stable contributions across re-seals.
+  end note
+
+  ' --------------------------------------------------------
+  ' LEFT COLUMN - Knowledge Sources, grouped by support module
+  ' --------------------------------------------------------
+
+  package "KSs (repository analysis side)" as KSI {
+
+    package "core support module" as KS_CORE <<support-module>> {
+      class FileKS
+      class SbomKS
+      class ConfigKS
+    }
+    note right of FileKS
+      **Third-party tools**
+      - `tokei` (MIT/Apache-2.0) -- per-language
+        LOC + file classification, sandboxed `execve`.
+      - `git` (GPL-2.0) -- working-copy walk via
+        plumbing commands; sandboxed `execve` only,
+        no library link.
+    end note
+    note right of SbomKS
+      **Third-party tools**
+      - `syft` (Apache-2.0) -- SBOM extraction
+        (CycloneDX/SPDX) from the working copy;
+        sandboxed `execve`.
+      **Primary write:** `itip:Index.Sbom`
+      (raw SBOM document handle + manifest).
+      **Projection:** `itip:Repository.SbomComponent`
+      (per-component semantic facts).
+    end note
+    package "java support module" as KS_JAVA <<support-module>> {
+      class ScipJavaKS
+      class JoernKS
+    }
+    note right of ScipJavaKS
+      **Third-party tools**
+      - `scip-java` (Apache-2.0) -- compiler-grade
+        SCIP index for Java/Scala/Kotlin; stable
+        cross-build symbol identity. Sandboxed
+        `execve`. **Truth source** for Code +
+        4 structural CodeGraph edges.
+      **Primary write:** `itip:Index.Scip`
+      (raw `.scip` protobuf handle + manifest).
+      **SCIP-mirror projections (same panel):**
+      `itip:Index.{ScipDocument, ScipSymbol, ScipOccurrence, ScipExternalSymbol}`,
+      plus
+      `itip:CodeGraph.{SymbolRef, TypeHierarchyEdge,
+      ImplementationEdge, ImportEdge}`.
+    end note
+    note right of JoernKS
+      **Third-party tools**
+      - `joern-parse` / `joern-export` (Apache-2.0)
+        -- Code Property Graph (CPG) producing
+        precise CallEdge + DataflowEdge. Sandboxed
+        `execve`.
+      **Primary write:** `itip:Index.JoernCpg`
+      (raw CPG handle + manifest).
+      **Projections:** `itip:CodeGraph.CallEdge`,
+      `itip:CodeGraph.DataflowEdge`.
+    end note
+    package "maven support module" as KS_MVN <<support-module>> {
+      class MavenProjectKS
+    }
+    note right of MavenProjectKS
+      **Third-party tools**
+      - In-process POM parser (Maven Resolver,
+        Apache-2.0) -- no `execve`; pure library
+        link.
+    end note
+    package "gradle support module" as KS_GRD <<support-module>> {
+      class GradleProjectKS
+    }
+    note right of GradleProjectKS
+      **Third-party tools**
+      - Gradle Tooling API (Apache-2.0) -- in-process
+        projection of `build.gradle(.kts)`; falls back
+        to a script-text parser when the daemon is
+        unavailable.
+    end note
+    package "spring support module" as KS_SPR <<support-module>> {
+      class SpringScanKS
+    }
+    note right of SpringScanKS
+      **Third-party tools**
+      - None. **SCIP consumer**: reads
+        `itip:Index.Scip` and opens its
+        `nativeAttributes.blobHandle` to stream
+        the raw `.scip` protobuf, filters symbols
+        by Spring annotations, projects to
+        `itip:Framework.*` slots. **Reuses SCIP
+        symbol identity and source ranges
+        verbatim** -- no own Java parser.
+    end note
+    package "iac support module" as KS_IAC <<support-module>> {
+      class IacScanKS
+      class DeploymentBindingKS
+    }
+    note right of IacScanKS
+      **Third-party tools**
+      - `terraform` / `helm` / `kustomize` CLIs
+        (MPL-2.0 / Apache-2.0 / Apache-2.0) -- used
+        in **read-only parsing** mode (`hcl format`,
+        `helm template`, `kustomize build`).
+        Sandboxed `execve`.
+    end note
+    package "graph-analysis support module" as KS_GA <<support-module>> {
+      class CommunityKS
+      class ProcessKS
+    }
+    note right of CommunityKS
+      **Third-party tools**
+      - `leidenalg` (**GPL-3.0**) -- in-process
+        Python community detection over already-
+        published `CodeGraph.{SymbolRef, CallEdge,
+        ImportEdge}`. **LICENSING ATTENTION** --
+        in-process embedding may extend copyleft to
+        the host; recommended swap to `python-louvain`
+        (BSD) before commercial ship. See
+        `sourcing-workflow.puml` licensing note.
+    end note
+    note right of ProcessKS
+      **Third-party tools**
+      - None (pure in-process DFS over `CallEdge`
+        rooted at `Framework.{Endpoint,
+        MessageConsumer, ScheduledTask}`).
+    end note
+  }
+
+  package "KSs (GSM-spine side)" as KSG <<support-module>> {
+    class GsmIdentificationKS
+    class GsmReconciliationKS
+    class GranularityKS         <<top-down>>
+    class ArchetypeMatchingKS
+    class StatementShapingKS
+    class ConfidenceSynthesisKS
+  }
+
+  ' --------------------------------------------------------
+  ' RIGHT COLUMN - Panels (packages) containing Contribution
+  '                Slot classes. Slot label suffix tags the
+  '                client-side reduction policy:
+  '                  [C] collectAll
+  '                  [H] highestConfidence
+  '                  [X] compose
+  ' --------------------------------------------------------
+
+  package "Repository Analysis panels" as INV {
+
+    package "itip:Repository" as PRepoInv <<panel>> {
+      class "FileNode  [C]"      as SFileNode  <<slot>>
+      class "SbomComponent  [C]" as SSbom      <<slot>>
+      class "ConfigEntry  [C]"   as SConfig    <<slot>>
+      class "Project  [C]"       as SProj      <<slot>>
+    }
+
+    package "itip:Index" as PIndex <<panel,raw-evidence,scip-mirror>> {
+      class "Scip  [C]"                 as SScipIdx  <<slot>>
+      class "JoernCpg  [C]"             as SJoernIdx <<slot>>
+      class "Sbom  [C]"                 as SSbomIdx  <<slot>>
+      class "ScipDocument  [C]"         as SScipDoc  <<slot>>
+      class "ScipSymbol  [C]"           as SScipSym  <<slot>>
+      class "ScipOccurrence  [C]"       as SScipOcc  <<slot>>
+      class "ScipExternalSymbol  [C]"   as SScipExt  <<slot>>
+    }
+    note bottom of PIndex
+      **`itip:Index` -- raw-evidence + SCIP-mirror panel.**
+
+      **Raw-evidence slots** (`Scip`, `JoernCpg`, `Sbom`).
+      Carry byte-stable **handles + manifests** for raw indexer
+      artefacts (SCIP protobuf, Joern CPG, SBOM document) that
+      live in the BundleStore. Payloads are small (sha256 +
+      sizeBytes + diagnostic counts); the bulky blob is
+      referenced by `nativeAttributes.blobHandle`.
+
+      **Producer rule (mandatory).** Each raw-evidence slot has
+      **exactly one producer** per language/tool scope:
+      `Scip` <- `Scip*KS`, `JoernCpg` <- `JoernKS`,
+      `Sbom` <- `SbomKS`. Other KSs whose outputs *could* be
+      expressed in these formats (Maven/Gradle declared deps,
+      Spring annotations, config keys, ...) **MUST NOT** co-write
+      into someone else's raw-index artefact -- they own their own
+      semantic slots and join on shared SCIP symbol ids at
+      reduction time. Rationale: preserve intent/observation
+      separability, avoid format pollution, decouple release
+      cadences, and use the blackboard's per-slot reduction
+      mechanism as designed.
+
+      **SCIP-mirror slots** (`ScipDocument`, `ScipSymbol`,
+      `ScipOccurrence`, `ScipExternalSymbol`).
+      Row-grain projections of `Scip` that partition the SCIP
+      standard model 1:1, so each top-level SCIP record type is
+      first-class on the blackboard (individually addressable,
+      individually citable by `itip:CodeGraph.*` edges,
+      individually reducible):
+
+      - `ScipDocument`        <- SCIP `Document` (metadata only:
+        relativePath, language, positionEncoding)
+      - `ScipSymbol`          <- SCIP `Document.symbols[]`
+        (per-document `SymbolInformation`)
+      - `ScipOccurrence`      <- SCIP `Document.occurrences[]`
+        (per-token positional refs with role/kind/diagnostics)
+      - `ScipExternalSymbol`  <- SCIP `Index.external_symbols[]`
+        (`SymbolInformation` for JDK / library symbols, no doc)
+
+      Index-level metadata (`tool_info`, `project_root`,
+      `version`, `text_document_encoding`) stays in
+      `Scip.nativeAttributes`. Source `Document.text` is NOT
+      surfaced -- canonical bytes live in git /
+      `itip:Repository.FileNode`. The four mirror slots are thin
+      verbatim envelopes around the corresponding SCIP record
+      (pass-through + back-pointer `scipDocumentRelativePath`
+      where applicable). Do not remap fields; track upstream SCIP
+      schema evolution.
+
+      Other semantic projections of these raw indexes
+      (`CodeGraph.{SymbolRef,*Edge}`, `Repository.SbomComponent`)
+      remain in their respective panels as derived materialised
+      views; they are byte-stable because they are deterministic
+      functions of the corresponding raw-evidence artefact.
     end note
 
-    class RepoBootstrap <<client-internal>> {
-      +clone(gitUrl, ref): WorkingCopy
-      +scope(includeGlobs, excludeGlobs)
-      +profile(): RunProfile
+    package "itip:Framework" as PFwInv <<panel>> {
+      class "Endpoint  [C]"               as SEndpoint <<slot>>
+      class "DiComponent  [C]"            as SDiComp   <<slot>>
+      class "ConfigurationProperty  [C]"  as SCfgProp  <<slot>>
+      class "PersistenceEntity  [C]"      as SPersE    <<slot>>
+      class "PersistenceRepository  [C]"  as SPersR    <<slot>>
+      class "MessageConsumer  [C]"        as SMsgC     <<slot>>
+      class "MessageProducer  [C]"        as SMsgP     <<slot>>
+      class "HttpClient  [C]"             as SHttpCli  <<slot>>
+      class "ScheduledTask  [C]"          as SSched    <<slot>>
     }
-    note right of RepoBootstrap
-      Was `GitRepoInstructionsProvider`.
-      Client-internal initialization:
-      clones the repo, materialises a
-      working copy, derives scope/profile,
-      and feeds the client-internal Run
-      Driver. Posts NO contributions.
-    end note
 
-    package "Discovery / lift KSs" as KS_SRC {
-      class RepoInventoryKS <<client-internal>>
-      class ScipIngestKS <<client-internal>>
-      class ConfigInterfaceKS <<client-internal>>
-      class JoernCallGraphKS <<client-internal>>
-      class InterfaceLiftKS <<client-internal>>
+    package "itip:Iac" as PIacInv <<panel>> {
+      class "IacResource  [C]"    as SIacRes  <<slot>>
+      class "IacModule  [C]"      as SIacMod  <<slot>>
+      class "IacVariable  [C]"    as SIacVar  <<slot>>
+      class "IacOutput  [C]"      as SIacOut  <<slot>>
+      class "IacProviderRef  [C]" as SIacProv <<slot>>
     }
-    note right of KS_SRC
-      POST contributions to the
-      `itip:Source*` panels of the
-      single Blackboard. External tools
-      (scip-*, joern, syft, tokei) are
-      sandboxed client-side and invoked
-      via `execve` allowlist; the service
-      sees only the resulting contributions.
-    end note
 
-    package "GSM-spine KSs" as KS_TGT {
-      class GsmIdentificationKS <<client-internal>>
-      class GsmReconciliationKS <<client-internal>>
-      class ArchetypeMatchingKS <<client-internal>>
-      class StatementShapingKS <<client-internal>>
-      class GranularityKS <<client-internal,top-down>>
-      class ConfidenceSynthesisKS <<client-internal>>
-    }
-    note right of KS_TGT
-      POST contributions to the
-      `itip:Definition` / `itip:Archetype`
-      / `itip:Statement` panels of the
-      same Blackboard. They gate their
-      trigger predicates on the live
-      `itip:Source*` views (`GET
-      /blackboards/{bbId}/state`); intra-DAG
-      ordering is client-side scheduling.
-    end note
-
-    class ClientReducer <<client-internal,controller>> {
-      +reduce(sealedStream): ReducedView
-      +log(reducerId, version, params, inputs[], output)
-    }
-    note right of ClientReducer
-      Runs after Bb seal. Reads
-      `GET /blackboards/{bbId}/contributions`
-      (byte-stable sealed stream) and applies
-      the per-slot client reduction policy
-      declared in `panels.puml` notes
-      (highestConfidence / collectAll /
-      compose / ...). Logs every reducer
-      invocation for deterministic replay.
-    end note
-
-    class PostReductionPipeline <<client-internal>> {
-      +validateAgainstArchetypes(reducedView)
-      +registerAscriptions(reducedView)
+    package "itip:CodeGraph" as PCodeGraph <<panel,cross-cutting>> {
+      class "SymbolRef  [C]"          as SSymRef  <<slot>>
+      class "TypeHierarchyEdge  [C]"  as STypeH   <<slot>>
+      class "ImplementationEdge  [C]" as SImpl    <<slot>>
+      class "ImportEdge  [C]"         as SImport  <<slot>>
+      class "CallEdge  [C]"           as SCall    <<slot>>
+      class "DataflowEdge  [C]"       as SData    <<slot>>
+      class "DeploymentEdge  [C]"     as SDeploy  <<slot>>
+      class "Community  [C]"          as SComm    <<slot>>
+      class "Process  [C]"            as SProc    <<slot>>
     }
   }
 
-  ' ============================================================
-  ' BLACKBOARD ONTOLOGY (sibling folder)
-  ' ============================================================
+  package "GSM-spine panels" as GSM {
 
-  package "Client-declared panels (panels.puml + contributions/)" as BBP {
-    note as BBPNote
-      itip:SourceInventory   itip:Definition
-      itip:SourceUnit        itip:Archetype
-      itip:SourceRelation    itip:Statement
-      itip:SourceInterface
-      Authoritative declarations:
-      panels.puml
-    end note
-  }
+    package "itip:Definition" as PDef <<panel,gsm-spine>> {
+      class "Claim  [H]"   as SClaim   <<slot>>
+      class "Merge  [C]"   as SMerge   <<slot>>
+      class "Verdict  [H]" as SVerdict <<slot>>
+    }
 
-  ' ============================================================
-  ' EXTERNAL DEPENDENCIES
-  ' ============================================================
+    package "itip:Archetype" as PArch <<panel,gsm-spine>> {
+      class "Application  [C]" as SAppl <<slot>>
+    }
 
-  package "External (client-side)" as EXT {
-    class DefinitionBlackboardManager <<service,external>> {
-      REST API
-    }
-    class DefinitionManager <<service,external>> {
-      Ascription registry
-    }
-    class ExternalTools <<binaries,external>> {
-      scip-*, joern-*,
-      syft, tokei
-    }
-    class InferenceService <<service,external>> {
-      LLM completion
+    package "itip:Statement" as PStmt <<panel,gsm-spine>> {
+      class "Draft  [X]" as SDraft <<slot>>
     }
   }
 
-  ' ============================================================
-  ' RELATIONSHIPS
-  ' ============================================================
+  ' --------------------------------------------------------
+  ' KS extends KnowledgeSource (every concrete KS)
+  ' --------------------------------------------------------
 
-  RepoBootstrap --> RunDriver : feeds scope+profile
-  RunDriver --> KS_SRC : schedules
-  RunDriver --> KS_TGT : schedules
-  RunDriver --> ClientReducer : runs after Bb seal
-  RunDriver --> PostReductionPipeline : runs after reduction
+  FileKS            --|> KnowledgeSource
+  SbomKS                --|> KnowledgeSource
+  ConfigKS              --|> KnowledgeSource
+  ScipJavaKS            --|> KnowledgeSource
+  JoernKS               --|> KnowledgeSource
+  MavenProjectKS           --|> KnowledgeSource
+  GradleProjectKS          --|> KnowledgeSource
+  SpringScanKS          --|> KnowledgeSource
+  IacScanKS             --|> KnowledgeSource
+  DeploymentBindingKS   --|> KnowledgeSource
+  GsmIdentificationKS   --|> KnowledgeSource
+  GsmReconciliationKS   --|> KnowledgeSource
+  GranularityKS         --|> KnowledgeSource
+  ArchetypeMatchingKS   --|> KnowledgeSource
+  StatementShapingKS    --|> KnowledgeSource
+  ConfidenceSynthesisKS --|> KnowledgeSource
+  CommunityKS           --|> KnowledgeSource
+  ProcessKS             --|> KnowledgeSource
 
-  KS_SRC ..> BBP : posts contributions (REST)
-  KS_TGT ..> BBP : posts contributions (REST)
+  ' --------------------------------------------------------
+  ' KS -> Slot edges (contributionSlot)
+  ' --------------------------------------------------------
 
-  RunDriver --> DefinitionBlackboardManager : REST
-  ClientReducer --> DefinitionBlackboardManager : GET sealed stream
-  KS_SRC --> ExternalTools : execve (sandboxed)
-  KS_TGT --> InferenceService : LLM (StatementShapingKS only)
-  PostReductionPipeline --> DefinitionManager : registers Ascriptions
+  FileKS          ..> SFileNode
+  SbomKS              ..> SSbomIdx : <<primary write>>
+  SbomKS              ..> SSbom    : <<projection>>
+  ConfigKS            ..> SConfig
+
+  ScipJavaKS          ..> SScipIdx : <<primary write>>
+  ScipJavaKS          ..> SScipDoc
+  ScipJavaKS          ..> SScipSym
+  ScipJavaKS          ..> SScipOcc
+  ScipJavaKS          ..> SScipExt
+  ScipJavaKS          ..> SSymRef
+  ScipJavaKS          ..> STypeH
+  ScipJavaKS          ..> SImpl
+  ScipJavaKS          ..> SImport
+
+  ' Graph-analysis KSs (BOTTOM_UP, read CodeGraph.* via DefinitionBlackboardManagerService.read,
+  ' run leidenalg / DFS in-process, write back to the same panel).
+  CommunityKS         ..> SComm
+  ProcessKS           ..> SProc
+  MavenProjectKS         ..> SProj
+  GradleProjectKS        ..> SProj
+  JoernKS             ..> SJoernIdx : <<primary write>>
+  JoernKS             ..> SCall
+  JoernKS             ..> SData
+
+  SpringScanKS        ..> SEndpoint
+  SpringScanKS        ..> SDiComp
+  SpringScanKS        ..> SCfgProp
+  SpringScanKS        ..> SPersE
+  SpringScanKS        ..> SPersR
+  SpringScanKS        ..> SMsgC
+  SpringScanKS        ..> SMsgP
+  SpringScanKS        ..> SHttpCli
+  SpringScanKS        ..> SSched
+
+  IacScanKS           ..> SIacRes
+  IacScanKS           ..> SIacMod
+  IacScanKS           ..> SIacVar
+  IacScanKS           ..> SIacOut
+  IacScanKS           ..> SIacProv
+  DeploymentBindingKS ..> SDeploy
+
+  GsmIdentificationKS   ..> SClaim
+  GsmReconciliationKS   ..> SMerge
+  GranularityKS         ..> SVerdict
+  ArchetypeMatchingKS   ..> SAppl
+  StatementShapingKS    ..> SDraft
+  ConfidenceSynthesisKS ..> SDraft
+
+  ' --------------------------------------------------------
+  ' Panel DAG (client-side scheduling, between panels)
+  ' --------------------------------------------------------
+
+  PRepoInv  --> PIndex
+  PRepoInv  --> PIacInv
+  PIndex    --> PFwInv
+  PIndex    --> PCodeGraph
+  PFwInv    --> PCodeGraph
+  PIacInv   --> PCodeGraph
+  PCodeGraph --> PDef
+  PDef      --> PArch
+  PArch     --> PStmt
+  PStmt     ..> PDef : <<TOP_DOWN>>
+
+  ' --------------------------------------------------------
+  ' Floating legends and validation notes
+  ' --------------------------------------------------------
+
+  note as Legend
+    **Reading this diagram**
+    - `KS  ..>  Slot`          : KS writes to that contribution
+                                 slot (`contributionSlot`); a KS
+                                 may have many.
+    - `Panel`  contains  `Slot` (package nesting); each slot is
+                                 backed by `def/contributions/<Panel>/<Slot>.schema.json`.
+    - `Panel  -->  Panel`      : client-side scheduling DAG.
+    - `Panel  ..>  Panel <<TOP_DOWN>>`: TOP_DOWN feedback edge
+                                 (`GranularityKS` reads
+                                 `Statement`, writes
+                                 `Definition.Verdict`).
+    - `KS  ..>  Panel <<overlay>>`: a KS that writes the same
+                                 `[C] collectAll` slots already
+                                 fanned-out by another KS in the
+                                 diagram. Drawn as ONE panel-level
+                                 edge to avoid edge crossings; the
+                                 actual slot list is on the edge
+                                 label. Reduction stays per-slot
+                                 (overlays do not bypass `[C]`).
+
+    **Slot reduction badge** (client-side, applied by
+    `ClientReducer` over the sealed contribution stream):
+    - `[C]` collectAll        - additive enumeration
+    - `[H]` highestConfidence - one winner per identity
+    - `[X]` compose           - deep per-key merge
+
+    Panels are **support-module-agnostic**: each `Panel` is a
+    stable schema-bearing target. Support modules (core / java /
+    maven / gradle / spring / iac, ...) are a property of **KSs**,
+    not of panels; adding a new support module adds KSs (and
+    possibly slots) against the existing panels.
+  end note
+
+  note as SlotPolicy
+    **Slot generalization & KS naming policy**
+    Two formal rules govern this sourcer; see
+    `definition-blackboard-manager` SKILL **§8bis**:
+    - **Rule 1 `techno-specific-knowledge-source`**: KSs
+      are named after the producer techno (`SpringScanKS`,
+      `MavenProjectKS`, `JoernKS`, `ScipJavaKS`, `IacScanKS`).
+    - **Rule 2 `techno-generic-contribution`**: slot schemas
+      are Pattern-C universal envelopes by default
+      (universal core + discriminator enum + back-pointer
+      + `nativeAttributes` escape hatch). Pattern-A
+      tool-specific slots require explicit justification;
+      Pattern-B union slots are forbidden.
+  end note
+
+  note as DefRules
+    **itip:Definition validation rules**
+    - `Claim.identityKey` required; spine join key.
+    - `Merge.supersedesIdentityKeys[]` MUST resolve to prior
+      `Claim` contributions in the same Blackboard.
+    - `Verdict.mergeWith` => `targetIdentityKeys[0]` resolves
+      to a Definition; `splitInto` => `targetIdentityKeys[]`
+      non-empty.
+    - **Merge precedence**: identity-time `Definition.Merge`
+      first; post-Statement `Definition.Verdict.mergeWith`
+      wins when both apply.
+  end note
+  PDef .. DefRules
+
+  note as ArchRules
+    **itip:Archetype validation rules**
+    - `archetypeRef` MUST resolve to a registered Archetype.
+    - Archetype's structural-base allOf chain MUST be
+      compatible with the resolved
+      `Definition.Claim.subjectKind` for the same identity.
+  end note
+  PArch .. ArchRules
+
+  note as StmtRules
+    **itip:Statement validation rules**
+    - `statement` MUST validate against the resolved Archetype
+      schema for the targeted Definition.
+    - LLM-driven contributions MUST carry a `cacheKey`
+      (deterministic-replay invariant).
+    - Post-reduction pipeline rejects compositions still
+      `partial` after `compose` reduction.
+  end note
+  PStmt .. StmtRules
+
+  note as CodeGraphRule
+    **itip:CodeGraph endpoint rule**
+    Every edge endpoint MUST resolve to a contribution in a
+    code-bearing slot of the same Blackboard:
+    `Index.{ScipSymbol, ScipOccurrence, ScipExternalSymbol}`
+    (the SCIP-standard symbol / occurrence / external-symbol
+    records; Java today, future per-language SCIP indexers add
+    further symbols here), `Framework.*`, `Iac.*`.
+  end note
+  PCodeGraph .. CodeGraphRule
+
+  note as ScipDualWrite
+    `ScipJavaKS` writes `Index.Scip` (raw),
+    `Index.{ScipDocument, ScipSymbol, ScipOccurrence, ScipExternalSymbol}`
+    (SCIP-mirror projections, same panel), and four
+    `CodeGraph.*` structural-edge slots
+    (one SCIP index, two panels).
+    `JoernKS` writes `Index.JoernCpg` (raw)
+    plus `CodeGraph.{CallEdge, DataflowEdge}`.
+    `SbomKS` writes `Index.Sbom` (raw)
+    plus `Repository.SbomComponent`.
+    `DeploymentBindingKS` joins `Framework.*`
+    with `Iac.*` to produce
+    `CodeGraph.DeploymentEdge`; ships with module `iac`
+    but requires both modules loaded.
+  end note
+  ScipJavaKS .. ScipDualWrite
 }
 
 @enduml
