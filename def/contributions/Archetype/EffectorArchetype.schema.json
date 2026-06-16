@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/Archetype/EffectorArchetype/v1",
+  "title": "EffectorArchetypeContribution",
+  "description": "Confidence-weighted archetype match asserting that a previously-identified outbound effector (HTTP client, message producer, DB writer, scheduled task) candidate matches a known Effector archetype catalog entry. Emitted by EffectorArchetypingKs by reading the upstream EffectorIdentity slot and the in-memory SourcerContext. Carries a confidence envelope (score < 1.0 by construction) and a provenance envelope (producing KS, indexed revision, tool versions, rule snapshot sha, seeds) for full reproducibility.",
+  "type": "object",
+  "allOf": [
+    {
+      "properties": {
+        "confidence": {
+          "$ref": "bb://itip/blackboard/_common/confidence-envelope/v1#"
+        }
+      }
+    },
+    {
+      "properties": {
+        "provenance": {
+          "$ref": "bb://itip/blackboard/_common/provenance-envelope/v1#"
+        }
+      }
+    }
+  ],
+  "required": [
+    "subject",
+    "confidence",
+    "provenance"
+  ],
+  "properties": {
+    "subject": {
+      "type": "string",
+      "description": "Canonical reference to the candidate subject. For code-anchored subjects (Structure, Mechanism, DataArchetype, Effector, Receptor) this is typically a SCIP symbol moniker. For Interaction this is a stable composite key over the two endpoint subject references."
+    },
+    "evidence": {
+      "type": "array",
+      "description": "Optional explainability fragments (SCIP occurrence ranges, framework annotation hits, dataflow path summaries, IaC resource refs, etc.). Pure references; raw deterministic graphs are NOT persisted here.",
+      "items": {
+        "type": "object"
+      }
+    }
+  },
+  "additionalProperties": true
+}

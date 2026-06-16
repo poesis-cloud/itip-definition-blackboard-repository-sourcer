@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bb://itip/blackboard/_common/provenance-envelope/v1",
+  "title": "ProvenanceEnvelope",
+  "description": "Provenance envelope embedded in every blackboard contribution. Captures the producing KS, the indexed source revision, the deterministic toolchain (with versions) used to build the in-memory SourcerContext consumed by the KS, the sha256 of the rule snapshot driving non-deterministic selection, and any RNG seeds used. Together with ConfidenceEnvelope this is sufficient to reproduce the identification (re-run the KS over a re-derived SourcerContext at the same indexedRevision with the same tool versions, ruleSnapshotSha256 and seeds).",
+  "type": "object",
+  "required": ["ks", "indexedRevision", "tools"],
+  "properties": {
+    "ks": {
+      "type": "string",
+      "description": "Fully-qualified producing KS identifier including version (e.g. 'itip:java:StructureIdentificationKs@1.3.0')."
+    },
+    "indexedRevision": {
+      "type": "string",
+      "description": "Identifier of the source revision indexed (typically a git commit sha, optionally suffixed with worktree dirty marker)."
+    },
+    "tools": {
+      "type": "array",
+      "description": "Deterministic tools used to build the in-memory SourcerContext consumed by the KS.",
+      "items": {
+        "type": "object",
+        "required": ["name", "version"],
+        "properties": {
+          "name": {"type": "string"},
+          "version": {"type": "string"},
+          "digest": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "ruleSnapshotSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$",
+      "description": "Sha256 of the rule snapshot driving any non-deterministic selection embedded in the KS."
+    },
+    "seeds": {
+      "type": "array",
+      "description": "RNG seeds used by non-deterministic selection (e.g. Leiden community detection).",
+      "items": {"type": "integer"}
+    }
+  },
+  "additionalProperties": true
+}
