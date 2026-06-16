@@ -1,0 +1,151 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "jpa",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "jakarta.persistence",
+    "artifactId": "jakarta.persistence-api",
+    "version": ">=2.2.0 <4.0.0"
+  } ],
+  "docBaseUrl": "https://jakarta.ee/specifications/persistence/3.1/apidocs/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "jakarta/persistence/Entity#": {
+      "summary": "Specifies that the class is an entity.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "name": {
+          "summary": "The entity name. Defaults to the unqualified name of the entity class.",
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "jakarta/persistence/Table#": {
+      "summary": "Specifies the primary table for the annotated entity.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "name": {
+          "summary": "The name of the table. Defaults to the entity name.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "catalog": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "schema": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "uniqueConstraints": {
+          "type": "jakarta.persistence.UniqueConstraint[]",
+          "default": [ ]
+        },
+        "indexes": {
+          "type": "jakarta.persistence.Index[]",
+          "default": [ ]
+        }
+      }
+    },
+    "jakarta/persistence/Embeddable#": {
+      "summary": "Specifies a class whose instances are stored as an intrinsic part of an owning entity and share the identity of the entity.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME"
+    },
+    "jakarta/persistence/MappedSuperclass#": {
+      "summary": "Designates a class whose mapping information is applied to the entities that inherit from it.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME"
+    },
+    "jakarta/persistence/Id#": {
+      "summary": "Specifies the primary key of an entity.",
+      "targets": [ "FIELD", "METHOD" ],
+      "retention": "RUNTIME"
+    },
+    "jakarta/persistence/EmbeddedId#": {
+      "summary": "Applied to a persistent field or property of an entity class or mapped superclass to denote a composite primary key that is an embeddable class.",
+      "targets": [ "FIELD", "METHOD" ],
+      "retention": "RUNTIME"
+    },
+    "jakarta/persistence/Column#": {
+      "summary": "Specifies the mapped column for a persistent property or field.",
+      "targets": [ "FIELD", "METHOD" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "name": {
+          "summary": "The name of the column. Defaults to the property or field name.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "nullable": {
+          "type": "boolean",
+          "default": true
+        },
+        "unique": {
+          "type": "boolean",
+          "default": false
+        },
+        "length": {
+          "type": "int",
+          "default": 255
+        },
+        "precision": {
+          "type": "int",
+          "default": 0
+        },
+        "scale": {
+          "type": "int",
+          "default": 0
+        },
+        "columnDefinition": {
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "javax/persistence/Entity#": {
+      "summary": "Legacy javax namespace; see jakarta.persistence.Entity.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "name": {
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "javax/persistence/Table#": {
+      "summary": "Legacy javax namespace; see jakarta.persistence.Table.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME"
+    },
+    "javax/persistence/Embeddable#": {
+      "summary": "Legacy javax namespace; see jakarta.persistence.Embeddable.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME"
+    },
+    "javax/persistence/MappedSuperclass#": {
+      "summary": "Legacy javax namespace; see jakarta.persistence.MappedSuperclass.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME"
+    },
+    "javax/persistence/Id#": {
+      "summary": "Legacy javax namespace; see jakarta.persistence.Id.",
+      "targets": [ "FIELD", "METHOD" ],
+      "retention": "RUNTIME"
+    },
+    "javax/persistence/Column#": {
+      "summary": "Legacy javax namespace; see jakarta.persistence.Column.",
+      "targets": [ "FIELD", "METHOD" ],
+      "retention": "RUNTIME"
+    }
+  },
+  "notes": "Both jakarta.persistence (JPA 3+, Jakarta EE) and legacy javax.persistence (JPA <=2.2, Java EE) namespaces enumerated. Entity table name resolution: explicit @Table.name > @Entity.name > simple class name (Hibernate naming strategy may further transform — KS work)."
+}

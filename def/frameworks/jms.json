@@ -1,0 +1,160 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "jms",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "org.springframework",
+    "artifactId": "spring-jms",
+    "version": ">=5.3.0 <7.0.0"
+  }, {
+    "groupId": "jakarta.jms",
+    "artifactId": "jakarta.jms-api",
+    "version": ">=3.0.0"
+  } ],
+  "docBaseUrl": "https://docs.spring.io/spring-framework/docs/current/javadoc-api/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "org/springframework/jms/annotation/JmsListener#": {
+      "summary": "Annotation that marks a method to be the target of a JMS message listener on the specified destination.",
+      "targets": [ "TYPE", "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "repeatable": true,
+      "attributes": {
+        "id": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "containerFactory": {
+          "summary": "The bean name of the JmsListenerContainerFactory to use to create the message listener container.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "destination": {
+          "summary": "The destination name for this listener, resolved through the container-wide DestinationResolver.",
+          "type": "java.lang.String",
+          "default": null
+        },
+        "subscription": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "selector": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "concurrency": {
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "org/springframework/jms/annotation/JmsListeners#": {
+      "summary": "Container annotation that aggregates several @JmsListener annotations.",
+      "targets": [ "TYPE", "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "type": "org.springframework.jms.annotation.JmsListener[]",
+          "default": null
+        }
+      }
+    },
+    "org/springframework/jms/annotation/EnableJms#": {
+      "summary": "Enable JMS listener annotated endpoints created under the cover by a JmsListenerContainerFactory.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true
+    }
+  },
+  "methods": {
+    "org/springframework/jms/core/JmsTemplate#convertAndSend().": {
+      "summary": "Send the given object to the default destination, converting the object to a JMS message with a configured MessageConverter.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "message",
+        "type": "java.lang.Object"
+      } ],
+      "overloadOf": "convertAndSend"
+    },
+    "org/springframework/jms/core/JmsTemplate#convertAndSend(+1).": {
+      "summary": "Send the given object to the named destination, converting the object to a JMS message.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "destinationName",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "message",
+        "type": "java.lang.Object"
+      } ],
+      "overloadOf": "convertAndSend"
+    },
+    "org/springframework/jms/core/JmsTemplate#convertAndSend(+2).": {
+      "summary": "Send the given object to the given Destination, converting the object to a JMS message.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "destination",
+        "type": "jakarta.jms.Destination"
+      }, {
+        "index": 1,
+        "name": "message",
+        "type": "java.lang.Object"
+      } ],
+      "overloadOf": "convertAndSend"
+    },
+    "org/springframework/jms/core/JmsTemplate#send().": {
+      "summary": "Send a message to the default destination using a MessageCreator callback.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "messageCreator",
+        "type": "org.springframework.jms.core.MessageCreator"
+      } ],
+      "overloadOf": "send"
+    },
+    "org/springframework/jms/core/JmsTemplate#send(+1).": {
+      "summary": "Send a message to the named destination using a MessageCreator callback.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "destinationName",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "messageCreator",
+        "type": "org.springframework.jms.core.MessageCreator"
+      } ],
+      "overloadOf": "send"
+    },
+    "jakarta/jms/MessageProducer#send().": {
+      "summary": "Sends a message using the MessageProducer's default delivery mode, priority, and time to live.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "message",
+        "type": "jakarta.jms.Message"
+      } ],
+      "overloadOf": "send"
+    }
+  },
+  "types": {
+    "jakarta/jms/MessageListener#": {
+      "summary": "A MessageListener object is used to receive asynchronously delivered messages.",
+      "kind": "interface"
+    },
+    "javax/jms/MessageListener#": {
+      "summary": "Legacy javax namespace; see jakarta.jms.MessageListener.",
+      "kind": "interface"
+    }
+  },
+  "notes": "Consumer destination: @JmsListener.destination (queue/topic name; resolution against JmsListenerContainerFactory's destinationResolver). MessageListener interface variant uses an externally-configured destination on the container — KS work. Producer destination: arity-1 send uses default destination; arity-2 first param is destination (string name OR Destination ref). Both jakarta.jms (JMS 3+) and javax.jms (JMS 2.x) MessageListener interfaces enumerated."
+}

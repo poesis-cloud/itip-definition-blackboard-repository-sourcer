@@ -1,0 +1,289 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "spring-mvc",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "org.springframework",
+    "artifactId": "spring-web",
+    "version": ">=5.3.0 <7.0.0"
+  }, {
+    "groupId": "org.springframework",
+    "artifactId": "spring-webmvc",
+    "version": ">=5.3.0 <7.0.0"
+  } ],
+  "docBaseUrl": "https://docs.spring.io/spring-framework/docs/current/javadoc-api/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "org/springframework/web/bind/annotation/RequestMapping#": {
+      "summary": "Annotation for mapping web requests onto methods in request-handling classes with flexible method signatures.",
+      "targets": [ "TYPE", "METHOD" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "name": {
+          "summary": "Assign a name to this mapping.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "value": {
+          "summary": "The primary mapping expressed by this annotation; alias for 'path'.",
+          "type": "java.lang.String[]",
+          "default": [ ],
+          "aliasFor": {
+            "attribute": "path"
+          }
+        },
+        "path": {
+          "summary": "The path mapping URIs (e.g. '/myPath.do').",
+          "type": "java.lang.String[]",
+          "default": [ ],
+          "aliasFor": {
+            "attribute": "value"
+          }
+        },
+        "method": {
+          "summary": "The HTTP request methods to map to, narrowing the primary mapping.",
+          "type": "org.springframework.web.bind.annotation.RequestMethod[]",
+          "default": [ ]
+        },
+        "params": {
+          "summary": "The parameters of the mapped request, narrowing the primary mapping.",
+          "type": "java.lang.String[]",
+          "default": [ ]
+        },
+        "headers": {
+          "summary": "The headers of the mapped request, narrowing the primary mapping.",
+          "type": "java.lang.String[]",
+          "default": [ ]
+        },
+        "consumes": {
+          "summary": "The consumable media types of the mapped request (Content-Type header).",
+          "type": "java.lang.String[]",
+          "default": [ ]
+        },
+        "produces": {
+          "summary": "The producible media types of the mapped request (Accept header).",
+          "type": "java.lang.String[]",
+          "default": [ ]
+        }
+      }
+    },
+    "org/springframework/web/bind/annotation/GetMapping#": {
+      "summary": "Annotation for mapping HTTP GET requests onto specific handler methods.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/web/bind/annotation/RequestMapping#",
+        "values": {
+          "method": [ "GET" ]
+        }
+      } ],
+      "attributes": {
+        "value": {
+          "summary": "Alias for RequestMapping#path.",
+          "type": "java.lang.String[]",
+          "default": [ ],
+          "aliasFor": {
+            "annotation": "org/springframework/web/bind/annotation/RequestMapping#",
+            "attribute": "path"
+          }
+        },
+        "path": {
+          "summary": "Alias for RequestMapping#path.",
+          "type": "java.lang.String[]",
+          "default": [ ],
+          "aliasFor": {
+            "annotation": "org/springframework/web/bind/annotation/RequestMapping#",
+            "attribute": "path"
+          }
+        }
+      }
+    },
+    "org/springframework/web/bind/annotation/PostMapping#": {
+      "summary": "Annotation for mapping HTTP POST requests onto specific handler methods.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/web/bind/annotation/RequestMapping#",
+        "values": {
+          "method": [ "POST" ]
+        }
+      } ],
+      "attributes": {
+        "value": {
+          "type": "java.lang.String[]",
+          "default": [ ],
+          "aliasFor": {
+            "annotation": "org/springframework/web/bind/annotation/RequestMapping#",
+            "attribute": "path"
+          }
+        },
+        "path": {
+          "type": "java.lang.String[]",
+          "default": [ ],
+          "aliasFor": {
+            "annotation": "org/springframework/web/bind/annotation/RequestMapping#",
+            "attribute": "path"
+          }
+        }
+      }
+    },
+    "org/springframework/web/bind/annotation/PutMapping#": {
+      "summary": "Annotation for mapping HTTP PUT requests onto specific handler methods.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/web/bind/annotation/RequestMapping#",
+        "values": {
+          "method": [ "PUT" ]
+        }
+      } ]
+    },
+    "org/springframework/web/bind/annotation/DeleteMapping#": {
+      "summary": "Annotation for mapping HTTP DELETE requests onto specific handler methods.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/web/bind/annotation/RequestMapping#",
+        "values": {
+          "method": [ "DELETE" ]
+        }
+      } ]
+    },
+    "org/springframework/web/bind/annotation/PatchMapping#": {
+      "summary": "Annotation for mapping HTTP PATCH requests onto specific handler methods.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/web/bind/annotation/RequestMapping#",
+        "values": {
+          "method": [ "PATCH" ]
+        }
+      } ]
+    },
+    "org/springframework/stereotype/Controller#": {
+      "summary": "Indicates that an annotated class is a 'Controller' (e.g. a web controller).",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/stereotype/Component#"
+      } ]
+    },
+    "org/springframework/web/bind/annotation/RestController#": {
+      "summary": "A convenience annotation that is itself annotated with @Controller and @ResponseBody.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/stereotype/Controller#"
+      }, {
+        "fqn": "org/springframework/web/bind/annotation/ResponseBody#"
+      } ]
+    },
+    "org/springframework/web/bind/annotation/ResponseBody#": {
+      "summary": "Indicates a method return value should be bound to the web response body.",
+      "targets": [ "TYPE", "METHOD" ],
+      "retention": "RUNTIME",
+      "documented": true
+    },
+    "org/springframework/web/bind/annotation/ControllerAdvice#": {
+      "summary": "Specialization of @Component for classes that declare @ExceptionHandler, @InitBinder, or @ModelAttribute methods to be shared across multiple @Controller classes.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/stereotype/Component#"
+      } ]
+    },
+    "org/springframework/web/bind/annotation/RestControllerAdvice#": {
+      "summary": "A convenience annotation that is itself annotated with @ControllerAdvice and @ResponseBody.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/web/bind/annotation/ControllerAdvice#"
+      }, {
+        "fqn": "org/springframework/web/bind/annotation/ResponseBody#"
+      } ]
+    },
+    "org/springframework/web/bind/annotation/PathVariable#": {
+      "summary": "Annotation which indicates that a method parameter should be bound to a URI template variable.",
+      "targets": [ "PARAMETER" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "type": "java.lang.String",
+          "default": "",
+          "aliasFor": {
+            "attribute": "name"
+          }
+        },
+        "name": {
+          "type": "java.lang.String",
+          "default": "",
+          "aliasFor": {
+            "attribute": "value"
+          }
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "org/springframework/web/bind/annotation/RequestParam#": {
+      "summary": "Annotation which indicates that a method parameter should be bound to a web request parameter.",
+      "targets": [ "PARAMETER" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "type": "java.lang.String",
+          "default": "",
+          "aliasFor": {
+            "attribute": "name"
+          }
+        },
+        "name": {
+          "type": "java.lang.String",
+          "default": "",
+          "aliasFor": {
+            "attribute": "value"
+          }
+        },
+        "required": {
+          "type": "boolean",
+          "default": true
+        },
+        "defaultValue": {
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "org/springframework/web/bind/annotation/RequestBody#": {
+      "summary": "Annotation indicating a method parameter should be bound to the body of the web request.",
+      "targets": [ "PARAMETER" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "required": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  },
+  "notes": "Endpoint role = transitively meta-annotated with org.springframework.web.bind.annotation.RequestMapping. HTTP verb = resolved RequestMapping.method (alias-resolved through @AliasFor)."
+}

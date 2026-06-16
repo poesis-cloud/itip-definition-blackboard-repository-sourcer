@@ -19,213 +19,136 @@ skinparam sequence {
 skinparam noteBackgroundColor #FFF8C5
 skinparam noteBorderColor #57606A
 
-title ITIP Definition Blackboard Repository Sourcer - Sourcing workflow (single-Blackboard Run; in-memory SourcerContext + 3-panel confidence-weighted blackboard)
+title ITIP Definition Blackboard Repository Sourcer - Sourcing workflow\n(aligned to components.puml: KSs depend on Services; Services post contributions to the Blackboard)
 
-' ---- Client side (single JVM) ----
-participant "ITIP Sourcer\n(RunDriver + RepoBootstrap)" as RD
-participant "Producer KSs\n(RepoScan, ScipJava, Joern,\n Syft, SpringScan, JpaScan,\n TerraformParse, CodeGraphAssembly)" as Prod
-participant "SourcerContext\n(in-memory only;\n NEVER persisted)" as Ctx
-participant "Consumer KSs\n(*IdentificationKs,\n *ArchetypingKs,\n *StatementKs)" as Cons
-participant "External tools\n(scip-java, joern-parse,\n syft, terraform parse)" as ExtT
-participant "Inference service\n(LLM)" as Inf
-participant "Client Reducer\n(controller-side)" as Red
-participant "Post-reduction pipeline\n(validate + register to DefMan)" as PIPE
+' ---- KSs (single representative per stage; the 6 subjects iterate inside each loop) ----
+participant "Identification KS\n(<Subject>IdentificationKs)" as KID
+participant "Archetyping KS\n(<Subject>ArchetypingKs)" as KAR
+participant "Statement KS\n(<Subject>StatementKs)" as KST
 
-' ---- Substrate side ----
-participant "REST API" as API
-participant "Blackboard\nManager" as BBMgr
-participant "Panel Registry" as PanelReg
-participant "Contribution\nValidator" as Val
-participant "Seal Manager" as Seal
-database    "Blackboard\nStore + Audit" as Store
+' ---- Services (own + encapsulate in-memory context) ----
+participant "ScipService\n<<stateful,in-memory>>" as Scip
+participant "CpgService\n<<stateful,in-memory>>" as Cpg
+participant "SbomService\n<<stateful,in-memory>>" as Sbom
+participant "LeidenAlgService\n<<stateless,algorithm>>" as Leiden
+participant "MappingService\n<<stateless,facade>>" as Map
+participant "InferenceService\n<<external>>" as Inf
+participant "DefinitionBlackboardService\n<<external; REST client>>" as DBS
 
-note over RD, Store
-  **Scope** -- one client Run = one Blackboard.
+' ---- Substrate ----
+participant "Blackboard\n(REST; 3 panels x 18 slots)" as BB
 
-  Radical re-design invariant: the blackboard hosts ONLY
-  confidence-bearing identifications (`confidence.score < 1.0`).
-  Deterministic tool outputs flow in-memory through `SourcerContext`
-  between co-located producer and consumer KSs in a single JVM and
-  are NEVER persisted (not on the blackboard, not on disk, not in
-  any cache). Re-derivable on demand from `provenance.indexedRevision`
-  + `provenance.tools[]`.
+== Blackboard creation + topology declaration ==
 
-  Blackboard topology (3 panels; declared once, frozen on first POST):
-   * `itip:Definition`  -- 6 *Identity slots
-   * `itip:Archetype`   -- 6 *Archetype slots
-   * `itip:Statement`   -- 6 *Statement slots
-  Subjects (x6 per panel): Structure, Mechanism, DataArchetype,
-  Effector, Receptor, Interaction.
-end note
+DBS -> BB : POST /blackboards (BlackboardConfig)
+BB --> DBS : 201 + bbId + ETag
 
-== Blackboard creation ==
+DBS -> BB : POST /blackboards/{bbId}/panels\n  3 panels x 6 slots = 18 slots\n  itip:Definition / itip:Archetype / itip:Statement
+BB --> DBS : 200 (topology frozen on first contribution POST)
 
-RD -> RD : mint runId (client-side)
-RD -> API : POST /blackboards\n  BlackboardConfig { name: "<repoLabel>",\n    auth: { writerSubjects: [...], bbAdminSubjects: [...] } }
-API -> BBMgr : create Blackboard
-BBMgr -> Store : persist Blackboard\n(status=OPEN, timestamp)
-BBMgr --> API : 201 + bbId + ETag
-API --> RD : 201 bbId, ETag
-
-RD -> RD : RepoBootstrap.clone(gitUrl, ref)\n  -> working copy in JVM-local tempdir
-RD -> RD : derive scope (include/exclude globs)\n  + profile
-
-== Declare topology (3 panels x 6 slots = 18) ==
-
-RD -> API : POST /blackboards/{bbId}/panels\n  PanelDeclaration[3]:\n    itip:Definition  (slots: {Structure,Mechanism,DataArchetype,Effector,Receptor,Interaction}Identity)\n    itip:Archetype   (slots: {Structure,Mechanism,DataArchetype,Effector,Receptor,Interaction}Archetype)\n    itip:Statement   (slots: {Structure,Mechanism,DataArchetype,Effector,Receptor,Interaction}Statement)\n  If-Match: <ETag>
-API -> PanelReg : register panels + slots
-PanelReg -> PanelReg : validate client-namespacing\n  + per-slot schemaUri form\n  + envelope $ref resolvability
-PanelReg -> Store : persist panels + slots
-PanelReg --> API : 201 + panelIds + ETag
-API --> RD : 200 (DAG validated, schema URIs cached), new ETag
-
-note right of PanelReg
-  Topology is frozen on first contribution
-  POST. Subsequent .../panels POSTs return 409.
-end note
-
-== Phase 1 - In-memory SourcerContext build (NO blackboard writes) ==
-
-RD -> Prod : run Producer KSs (in dependency order)
-
-Prod -> ExtT : execve scip-java (sandboxed)
-ExtT --> Prod : .scip protobuf bytes
-Prod -> Ctx : populate ScipIndex (parsed in JVM heap)
-
-Prod -> ExtT : execve joern-parse / joern-export
-ExtT --> Prod : CPG outputs
-Prod -> Ctx : populate LoadedCpg
-
-Prod -> ExtT : execve syft
-ExtT --> Prod : SBOM (CycloneDX/SPDX)
-Prod -> Ctx : populate Sbom
-
-Prod -> Prod : in-process scan (Spring annotations,\n  JPA entities, Terraform HCL parse, ...)
-Prod -> Ctx : populate FrameworkInventory + IacInventory
-
-Prod -> Ctx : assemble CodeGraph\n  (joins ScipIndex + LoadedCpg + FrameworkInventory + IacInventory)
-
-note right of Ctx
-  At this point `SourcerContext` is fully built
-  in JVM heap. Every Producer KS run is logged
-  with its tool versions and outputs' digests
-  for downstream `provenance.tools[]` capture.
-  Nothing has touched the blackboard yet.
-end note
-
-== Phase 2 - Identification (write Definition panel) ==
+== Phase 1 - Identification (write Definition panel) ==
 
 loop for each Subject in {Structure, Mechanism, DataArchetype, Effector, Receptor, Interaction}
 
-  RD -> Cons : run <Subject>IdentificationKs
-  Cons -> Ctx : in-memory read (deterministic graphs)
-  Cons -> Cons : embed non-deterministic selection\n  (e.g. Leiden inside StructureIdentificationKs;\n   taint-reach inside Effector/Receptor/Interaction;\n   structural heuristics inside DataArchetype/Mechanism)
-  Cons -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Definition, slot=<Subject>Identity,\n   post={subject, evidence[],\n         confidence:{score<1.0, method, factors[]},\n         provenance:{ks@version, indexedRevision,\n                     tools[], ruleSnapshotSha256, seeds[]}})
+  KID -> Scip : listSymbols / findOccurrences / ...
+  Scip -> Scip : lazy-prime (in-memory, never persisted)
+  Scip --> KID : symbols / occurrences
 
-end
-
-== Phase 3 - Archetyping (write Archetype panel) ==
-
-loop for each Subject
-
-  RD -> Cons : run <Subject>ArchetypingKs
-  Cons -> API : GET /blackboards/{bbId}/state\n  (read upstream <Subject>Identity slot)
-  Cons -> Ctx : in-memory read (refine match)
-  Cons -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Archetype, slot=<Subject>Archetype,\n   post={subject, evidence[], confidence, provenance})
-
-end
-
-== Phase 4 - Statement shaping (write Statement panel) ==
-
-loop for each Subject
-
-  RD -> Cons : run <Subject>StatementKs
-  Cons -> API : GET /blackboards/{bbId}/state\n  (read upstream <Subject>Archetype slot)
-  alt LLM-driven
-    Cons -> Inf : completeStatement(archetypeMatch, evidence)
-    Inf --> Cons : draft (carry inference cacheKey)
-  else deterministic
-    Cons -> Ctx : structural extraction
+  opt subject needs call/dataflow topology
+    KID -> Cpg : callEdges / dataflowEdges
+    Cpg -> Cpg : lazy-prime
+    Cpg --> KID : edges
   end
-  Cons -> API : POST /blackboards/{bbId}/contributions\n  (panel=itip:Statement, slot=<Subject>Statement,\n   post={subject, draftStatement, evidence[],\n         confidence, provenance})
+
+  opt Structure subject
+    KID -> Leiden : communities(graph, seed, resolution)
+    Leiden --> KID : communities
+  end
+
+  KID -> Map : mapToArchetype(node)\n  + extractProperties(node, archetype)
+  Map --> KID : archetypeUri? + properties
+
+  KID -> KID : embed non-deterministic selection\n  (e.g. Leiden for Structure;\n   taint-reach for Effector/Receptor/Interaction;\n   structural heuristics for Mechanism/DataArchetype)
+  KID -> DBS : contributeToBlackboard(\n    panel=itip:Definition,\n    slot=<Subject>Identity,\n    post={subject, evidence[],\n          confidence:{score<1.0, method, factors[]},\n          provenance:{ks@version, indexedRevision,\n                      tools[], ruleSnapshotSha256, seeds[]}})
+  DBS -> BB : POST /blackboards/{bbId}/contributions
+  BB --> DBS : 201 + contributionId
+  DBS --> KID : contributionId
 
 end
 
-note over API, Store
-  Substrate-side handling of every contribution POST above:
-    API -> Val : validate(post vs slot.schemaUri,
-                          required confidence + provenance,
-                          score < 1.0,
-                          status=OPEN)
-    alt accepted
-      Val -> Store : append contribution (timestamp)
-                  + audit-ledger entry (POSTED)
-      Val --> API : 201 + contributionId
-    else schema fail (e.g. score == 1.0 forbidden)
-      Val --> API : 422 + diagnostics (NOT persisted)
-    else blackboard not OPEN
-      Val --> API : 409
-    end
+== Phase 2 - Archetyping (write Archetype panel) ==
+
+loop for each Subject
+
+  KAR -> DBS : read upstream <Subject>Identity slot
+  DBS -> BB : GET /blackboards/{bbId}/state
+  BB --> DBS : Identity contributions
+  DBS --> KAR : Identity contributions
+
+  KAR -> Map : refine archetype + extractProperties
+  Map --> KAR : archetypeUri + properties
+
+  KAR -> DBS : contributeToBlackboard(\n    panel=itip:Archetype,\n    slot=<Subject>Archetype,\n    post={subject, evidence[], confidence, provenance})
+  DBS -> BB : POST /blackboards/{bbId}/contributions
+  BB --> DBS : 201 + contributionId
+
+end
+
+== Phase 3 - Statement shaping (write Statement panel) ==
+
+loop for each Subject
+
+  KST -> DBS : read upstream <Subject>Archetype slot
+  DBS -> BB : GET /blackboards/{bbId}/state
+  BB --> DBS : Archetype contributions
+  DBS --> KST : Archetype contributions
+
+  alt LLM-driven
+    KST -> Inf : completeStatement(archetypeMatch, evidence)
+    Inf --> KST : draft (carries inference cacheKey)
+  else deterministic
+    KST -> Map : extractProperties for draft statement
+    Map --> KST : properties
+  end
+
+  KST -> DBS : contributeToBlackboard(\n    panel=itip:Statement,\n    slot=<Subject>Statement,\n    post={subject, draftStatement, evidence[],\n          confidence, provenance})
+  DBS -> BB : POST /blackboards/{bbId}/contributions
+  BB --> DBS : 201 + contributionId
+
+end
+
+note over KID, BB
+  Substrate-side validation on every contribution POST:
+   * payload conforms to slot.schemaUri
+   * confidence.score < 1.0 (core invariant)
+   * provenance envelope present
+   * blackboard.status == OPEN
+  On failure: 422 (schema) or 409 (status). Nothing persisted.
 end note
 
-== Seal (client asserts done) ==
+== Seal ==
 
-RD -> API : POST /blackboards/{bbId}/seal\n  Authorization: Bearer <bb:seal scope>\n  If-Match: <ETag>
-API -> Seal : transition Blackboard -> SEALING
-Seal -> Store : reject further writes (409)
-Seal -> Store : freeze contribution stream\n(byte-stable order:\npanel, slot, timestamp, id)
-Seal -> Store : audit: seal event
-Seal -> Store : Blackboard -> SEALED (sealTimestamp)
-Seal --> API : 200 + sealTimestamp
-API --> RD : 200 (status=SEALED)
+DBS -> BB : POST /blackboards/{bbId}/seal\n  (If-Match: <ETag>)
+BB --> DBS : 200 (status=SEALED, sealTimestamp)
 
-== Read sealed contribution stream + reduce + register ==
-
-RD -> API : GET /blackboards/{bbId}/contributions\n  ?panel=&slot=  (paginated; byte-stable)
-API -> Store : load sealed stream slice
-API --> RD : Contribution[]
-RD -> Red : reduce per (panel, slot, subject)\n  using per-slot client policy (typically\n  highestConfidence over the *Statement slots);\n  log (reducerId, version, params,\n       inputContributionURIs[], outputValue)
-Red --> RD : reducedView
-RD -> PIPE : validate(reducedView) + register(Ascriptions)\n  to Definition Manager
-
-note over PIPE
-  Client-side. The substrate has no knowledge of "Ascription",
-  "Definition Manager", or any GSM construct beyond opaque slot
-  values. Reduction is itself a client-controller process; the
-  substrate provides only the byte-stable sealed contribution
-  stream as the replay anchor.
-
-  Replayability: any contribution can be regenerated by re-running
-  the named KS at the same `provenance.indexedRevision` with the
-  same `provenance.tools[]` versions (rebuilds SourcerContext) and
-  the same `provenance.ruleSnapshotSha256` + `provenance.seeds[]`
-  (drives the embedded non-deterministic selection).
+note over DBS, BB
+  Post-seal handling (reading the sealed contribution stream,
+  client-side reduction, archetype validation, Ascription
+  registration into the Definition Manager) is OUT OF SCOPE
+  of the components diagram and therefore out of scope of
+  this sequence. It is a downstream client concern that
+  consumes `GET /blackboards/{bbId}/contributions` from the
+  sealed, byte-stable stream.
 end note
 
 == Blackboard isolation (no chaining) ==
 
-note over RD, API
+note over DBS, BB
   Each Blackboard is fully isolated on the substrate side.
-  `Contribution.derivedContribution[]` MUST reference contributions
-  in the SAME Blackboard (cross-Bb URIs are rejected with 422).
-  Cross-Bb lineage (if any) lives in the client's own log.
-end note
-
-== Licensing attention point (design-time, MUST resolve before commercial ship) ==
-
-note over Prod, ExtT #FFD7D5
-  **External-tool licensing audit -- BLOCKING for commercial Poesis distribution.**
-
-  If `StructureIdentificationKs` embeds `leidenalg` (Python, GPL-3.0)
-  in-process, copyleft may extend to the host JVM via the embedded
-  Python sandbox. Mitigations (pick one before ship):
-   (a) replace with `python-louvain` (BSD) or `cdlib` (BSD-3);
-   (b) isolate `leidenalg` behind a separate sandboxed subprocess
-       so the host process is not "combined work";
-   (c) accept GPL-3.0 obligations for the distributed binary.
-
-  Default safe path: (a) -- swap to `python-louvain`. Slightly lower
-  modularity quality; entire stack stays under permissive licenses.
+  `Contribution.derivedContribution[]` MUST reference
+  contributions in the SAME Blackboard (cross-Bb URIs are
+  rejected with 422). Cross-Bb lineage (if any) lives in
+  client logs.
 end note
 
 @enduml

@@ -1,0 +1,22 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          blackboard:
+            client-id: test
+            client-secret: test
+            authorization-grant-type: client_credentials
+            scope: blackboard.contribute
+            provider: blackboard
+        provider:
+          blackboard:
+            token-uri: http://localhost/token
+            authorization-uri: http://localhost/auth
+            jwk-set-uri: http://localhost/jwks
+
+sourcer:
+  blackboard:
+    base-url: http://localhost/blackboard
+  contributions:
+    schema-pattern: classpath:contributions/**/*.schema.json

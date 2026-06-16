@@ -1,10 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "bb://itip/blackboard/_common/confidence-envelope/v1",
+  "$id": "bb://itip/blackboard/confidence-envelope/v1",
   "title": "ConfidenceEnvelope",
   "description": "Confidence envelope embedded in every blackboard contribution. The blackboard hosts ONLY confidence-bearing identifications (score < 1.0 by construction); deterministic tool outputs (SCIP, CPG, SBOM, framework inventory, IaC inventory, code graph) flow in-memory between co-located producer and consumer KSs via SourcerContext and are NEVER persisted on the blackboard. The 'method' string identifies the scoring scheme (e.g. 'leiden+modularity', 'taint-coverage', 'rule-vote') and the 'factors' array carries explainability fragments.",
   "type": "object",
-  "required": ["score", "method"],
+  "required": [ "score", "method" ],
   "properties": {
     "score": {
       "type": "number",
@@ -21,13 +21,23 @@
       "description": "Explainability fragments contributing to the score.",
       "items": {
         "type": "object",
-        "required": ["name"],
+        "required": [ "name" ],
         "properties": {
-          "name": {"type": "string"},
-          "weight": {"type": "number"},
-          "value": {"type": "number"},
-          "contribution": {"type": "number"},
-          "evidence": {"type": "string"}
+          "name": {
+            "type": "string"
+          },
+          "weight": {
+            "type": "number"
+          },
+          "value": {
+            "type": "number"
+          },
+          "contribution": {
+            "type": "number"
+          },
+          "evidence": {
+            "type": "string"
+          }
         },
         "additionalProperties": true
       }

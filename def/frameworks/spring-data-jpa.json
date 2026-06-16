@@ -1,0 +1,167 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "spring-data-jpa",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "org.springframework.data",
+    "artifactId": "spring-data-commons",
+    "version": ">=2.7.0 <4.0.0"
+  }, {
+    "groupId": "org.springframework.data",
+    "artifactId": "spring-data-jpa",
+    "version": ">=2.7.0 <4.0.0"
+  } ],
+  "docBaseUrl": "https://docs.spring.io/spring-data/jpa/docs/current/api/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "org/springframework/data/jpa/repository/Query#": {
+      "summary": "Annotation to declare finder queries directly on repository methods.",
+      "targets": [ "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "summary": "Defines the JPA query to be executed when the annotated method is called.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "countQuery": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "name": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "nativeQuery": {
+          "summary": "Configures whether the given query is a native one.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "org/springframework/data/jpa/repository/Modifying#": {
+      "summary": "Indicates a query method should be considered as modifying.",
+      "targets": [ "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "flushAutomatically": {
+          "type": "boolean",
+          "default": false
+        },
+        "clearAutomatically": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "org/springframework/data/repository/NoRepositoryBean#": {
+      "summary": "Annotation to exclude repository interfaces from being picked up and thus in consequence getting an instance being created.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true
+    },
+    "org/springframework/data/repository/RepositoryDefinition#": {
+      "summary": "Annotation to demarcate interfaces a repository proxy shall be created for; analogous to extending Repository.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "domainClass": {
+          "type": "java.lang.Class<?>",
+          "default": null
+        },
+        "idClass": {
+          "type": "java.lang.Class<?>",
+          "default": null
+        }
+      }
+    }
+  },
+  "types": {
+    "org/springframework/data/repository/Repository#": {
+      "summary": "Central repository marker interface. Captures the domain type to manage as well as the domain type's id type.",
+      "kind": "interface",
+      "typeParameters": [ {
+        "index": 0,
+        "name": "T",
+        "bound": "java.lang.Object"
+      }, {
+        "index": 1,
+        "name": "ID",
+        "bound": "java.lang.Object"
+      } ]
+    },
+    "org/springframework/data/repository/CrudRepository#": {
+      "summary": "Interface for generic CRUD operations on a repository for a specific type.",
+      "kind": "interface",
+      "typeParameters": [ {
+        "index": 0,
+        "name": "T",
+        "bound": "java.lang.Object"
+      }, {
+        "index": 1,
+        "name": "ID",
+        "bound": "java.lang.Object"
+      } ],
+      "extends": [ "org/springframework/data/repository/Repository#" ]
+    },
+    "org/springframework/data/repository/PagingAndSortingRepository#": {
+      "summary": "Repository extension to provide methods to retrieve entities using the pagination and sorting abstraction.",
+      "kind": "interface",
+      "typeParameters": [ {
+        "index": 0,
+        "name": "T",
+        "bound": "java.lang.Object"
+      }, {
+        "index": 1,
+        "name": "ID",
+        "bound": "java.lang.Object"
+      } ],
+      "extends": [ "org/springframework/data/repository/Repository#" ]
+    },
+    "org/springframework/data/jpa/repository/JpaRepository#": {
+      "summary": "JPA-specific extension of Repository.",
+      "kind": "interface",
+      "typeParameters": [ {
+        "index": 0,
+        "name": "T",
+        "bound": "java.lang.Object"
+      }, {
+        "index": 1,
+        "name": "ID",
+        "bound": "java.lang.Object"
+      } ],
+      "extends": [ "org/springframework/data/repository/ListCrudRepository#", "org/springframework/data/repository/ListPagingAndSortingRepository#", "org/springframework/data/repository/query/QueryByExampleExecutor#" ]
+    },
+    "org/springframework/data/jpa/repository/JpaSpecificationExecutor#": {
+      "summary": "Interface to allow execution of Specifications based on the JPA criteria API.",
+      "kind": "interface",
+      "typeParameters": [ {
+        "index": 0,
+        "name": "T",
+        "bound": "java.lang.Object"
+      } ]
+    },
+    "org/springframework/data/mongodb/repository/MongoRepository#": {
+      "summary": "Mongo-specific Repository interface.",
+      "kind": "interface",
+      "typeParameters": [ {
+        "index": 0,
+        "name": "T",
+        "bound": "java.lang.Object"
+      }, {
+        "index": 1,
+        "name": "ID",
+        "bound": "java.lang.Object"
+      } ],
+      "extends": [ "org/springframework/data/repository/ListCrudRepository#", "org/springframework/data/repository/ListPagingAndSortingRepository#" ]
+    }
+  },
+  "notes": "Repository role = subtype (transitive) of org.springframework.data.repository.Repository. Entity type binding = type-argument 0 (T) at the extension/declaration site. ID type = type-argument 1. @RepositoryDefinition is an alternative to extending Repository — domainClass attribute carries the entity class explicitly."
+}

@@ -1,5 +1,7 @@
 @startuml components
 
+scale max 4000 width
+
 ' ============================================================
 ' VISUAL THEME
 ' ============================================================
@@ -21,170 +23,109 @@ skinparam classFontColor #24292F
 skinparam noteBackgroundColor #FFF8C5
 skinparam noteBorderColor #57606A
 
-left to right direction
+' Top-to-bottom layout: keeps rendered canvas under PlantUML
+' default PLANTUML_LIMIT_SIZE=4096 (left-to-right layout pushed
+' the diagram beyond 4096px width and the jebbs.plantuml
+' extension reported "No valid diagram found here!").
 
 ' ============================================================
 ' CD - ITIP Definition Blackboard Repository Sourcer
-' Radical re-design: in-memory SourcerContext + 3-panel
-' confidence-weighted blackboard (18 slots = 6 GSM subjects
-' x 3 lifecycle stages).
-'
-' Invariant: the blackboard hosts ONLY confidence-bearing
-' identifications (score < 1.0 by construction). Deterministic
-' tool outputs (SCIP, CPG, SBOM, framework inventory, IaC
-' inventory, code graph) flow in-memory between co-located
-' producer and consumer KSs in a single JVM and are NEVER
-' persisted (not even cached).
 ' ============================================================
 
 frame "CD - ITIP Definition Blackboard Repository Sourcer - components" as F1 {
 
-  ' --------------------------------------------------------
-  ' Client process scaffolding
-  ' --------------------------------------------------------
-
-  package "Client process (single JVM, sandboxed)" as CLIENT {
-    class RepoBootstrap            <<client-internal>>
-    class RunDriver                <<client-internal>>
-    class ClientReducer            <<client-internal,controller>>
-    class PostReductionPipeline    <<client-internal>>
+  package "KS contract" as KSAPI <<contract>> {
+    abstract class KnowledgeSource <<abstract>> {
+      +getFqn() : String
+      +getSourceContributionSlots() : Set<ContributionSlot>
+      +getTargetContributionSlots() : Set<ContributionSlot>
+      +isContributableBlackboard() : boolean
+      +contributeToBlackboard() : void
+    }
   }
 
-  package "External services / tools" as EXT {
-    class DefinitionBlackboardManager <<service,external>>
-    class DefinitionManager           <<service,external>>
+  package "Services (own + encapsulate in-memory context)" as SVC <<service-layer>> {
+    class ScipService                 <<service,stateful,in-memory>>
+    class CpgService                  <<service,stateful,in-memory>>
+    class SbomService                 <<service,stateful,in-memory>>
+    class LeidenAlgService            <<service,stateless,algorithm>>
+    class MappingService              <<service,stateless,facade>>
+    class DefinitionBlackboardService <<service,external>>
     class InferenceService            <<service,external>>
-    class ExternalTools               <<binaries,external>>
   }
 
-  RepoBootstrap        --> RunDriver               : scope + profile
-  RunDriver            --> ClientReducer           : after Bb seal
-  ClientReducer        --> PostReductionPipeline   : reducedView
-  RunDriver            --> DefinitionBlackboardManager : REST (Bb / panels / contributions / seal)
-  ClientReducer        --> DefinitionBlackboardManager : GET sealed stream
-  PostReductionPipeline --> DefinitionManager      : register Ascriptions
-
-  ' --------------------------------------------------------
-  ' In-memory SourcerContext (deterministic substrate;
-  ' NEVER persisted on the blackboard or any cache)
-  ' --------------------------------------------------------
-
-  package "SourcerContext (in-memory only, JVM-local)" as CTX <<deterministic>> {
-    class RepoSnapshot       <<in-memory>>
-    class ScipIndex          <<in-memory>>
-    class LoadedCpg          <<in-memory>>
-    class Sbom               <<in-memory>>
-    class FrameworkInventory <<in-memory>>
-    class IacInventory       <<in-memory>>
-    class CodeGraph          <<in-memory>>
-  }
-
-  note right of CTX
-    **In-memory deterministic substrate.**
-    Built by Producer KSs from external tools
-    (scip-java, joern-parse, syft, framework
-    scanners, iac scanners) and source files.
-    Consumed by Consumer KSs in the same JVM.
-
-    NEVER persisted: not on the blackboard, not
-    on disk, not in any cache. Re-derivable on
-    demand from `indexedRevision` + tool versions
-    captured in each contribution's
-    `provenance.tools[]`.
-
-    This is the design enforcement of the rule:
-    "blackboard hosts only confidence-bearing
-    identifications"; everything deterministic
-    flows in-memory.
+  note right of SVC
+    **Service → dependency form (current bootstrap):**
+      • (prereq) Repo clone → **JGit** (Maven, in-process)
+      • ScipService
+          - produce: **scip-java** binary (subprocess, in image);
+            add scip-* per language as scope widens
+          - parse:   **protobuf-java** + generated `Scip` classes
+            (`src/main/proto/scip.proto` compiled by
+            `protobuf-maven-plugin`)
+      • CpgService     → **cpg-core** + **cpg-language-java**
+                          + **cpg-language-jvm** (JVM-only scope)
+      • SbomService
+          - generate: **syft** binary (subprocess, in image)
+          - parse:    **cyclonedx-core-java** (Maven)
+      • LeidenAlgService          → **nl.cwts:networkanalysis** (Maven)
+      • MappingService            → Jackson (Spring Boot transitive)
+      • DefinitionBlackboardService → Spring **RestClient**
+                                    + `json-schema-validator`
+                                    + `oauth2-client`
+      • InferenceService          → **deferred** (no client lib;
+                                    will reuse RestClient when wired)
   end note
 
-  ' --------------------------------------------------------
-  ' Producer KSs - build the SourcerContext
-  ' --------------------------------------------------------
+  package "KSs (produce GSM contributions to the blackboard)" as KS {
 
-  package "Producer KSs (run first; build SourcerContext)" as PROD {
-    class RepoScanKS         <<producer>>
-    class ScipJavaKS         <<producer>>
-    class JoernKS            <<producer>>
-    class SyftKS             <<producer>>
-    class SpringScanKS       <<producer>>
-    class JpaScanKS          <<producer>>
-    class TerraformParseKS   <<producer>>
-    class CodeGraphAssemblyKS <<producer>>
-  }
-
-  RepoScanKS         ..> RepoSnapshot       : populates
-  ScipJavaKS         ..> ScipIndex          : populates
-  JoernKS            ..> LoadedCpg          : populates
-  SyftKS             ..> Sbom               : populates
-  SpringScanKS       ..> FrameworkInventory : populates
-  JpaScanKS          ..> FrameworkInventory : populates
-  TerraformParseKS   ..> IacInventory       : populates
-  CodeGraphAssemblyKS ..> CodeGraph         : assembles (from ScipIndex + LoadedCpg + FrameworkInventory + IacInventory)
-
-  PROD ..> ExternalTools : execve sandbox\n(scip-java, joern-parse, syft,\n terraform parser, in-process scanners)
-
-  ' --------------------------------------------------------
-  ' Consumer KSs - read SourcerContext, write blackboard slots
-  ' --------------------------------------------------------
-
-  package "Consumer KSs (run after producers; embed non-deterministic selection)" as CONS {
-
-    package "Identification KSs (write Definition panel)" as CONS_ID {
-      class StructureIdentificationKs   <<consumer>>
-      class MechanismIdentificationKs   <<consumer>>
-      class DataArchetypeIdentificationKs <<consumer>>
-      class EffectorIdentificationKs    <<consumer>>
-      class ReceptorIdentificationKs    <<consumer>>
-      class InteractionIdentificationKs <<consumer>>
+    package "Identification KSs (write Definition panel)" as KS_ID {
+      class StructureIdentificationKs     <<ks>>
+      class MechanismIdentificationKs     <<ks>>
+      class DataArchetypeIdentificationKs <<ks>>
+      class EffectorIdentificationKs      <<ks>>
+      class ReceptorIdentificationKs      <<ks>>
+      class InteractionIdentificationKs   <<ks>>
     }
 
-    package "Archetyping KSs (write Archetype panel)" as CONS_AR {
-      class StructureArchetypingKs    <<consumer>>
-      class MechanismArchetypingKs    <<consumer>>
-      class DataArchetypeArchetypingKs <<consumer>>
-      class EffectorArchetypingKs     <<consumer>>
-      class ReceptorArchetypingKs     <<consumer>>
-      class InteractionArchetypingKs  <<consumer>>
+    package "Archetyping KSs (write Archetype panel)" as KS_AR {
+      class StructureArchetypingKs       <<ks>>
+      class MechanismArchetypingKs       <<ks>>
+      class DataArchetypeArchetypingKs   <<ks>>
+      class EffectorArchetypingKs        <<ks>>
+      class ReceptorArchetypingKs        <<ks>>
+      class InteractionArchetypingKs     <<ks>>
     }
 
-    package "Statement KSs (write Statement panel)" as CONS_ST {
-      class StructureStatementKs    <<consumer>>
-      class MechanismStatementKs    <<consumer>>
-      class DataArchetypeStatementKs <<consumer>>
-      class EffectorStatementKs     <<consumer>>
-      class ReceptorStatementKs     <<consumer>>
-      class InteractionStatementKs  <<consumer>>
+    package "Statement KSs (write Statement panel)" as KS_ST {
+      class StructureStatementKs         <<ks>>
+      class MechanismStatementKs         <<ks>>
+      class DataArchetypeStatementKs     <<ks>>
+      class EffectorStatementKs          <<ks>>
+      class ReceptorStatementKs          <<ks>>
+      class InteractionStatementKs       <<ks>>
     }
   }
 
-  CTX <.. CONS : in-memory read\n(no persistence, no cache)
-
-  CONS_ST ..> InferenceService : optional LLM\n(StatementKs only)
-
-  note right of CONS_ID
-    **Non-deterministic selection embedded.**
-    Each spine KS embeds its own non-deterministic
-    selection over the deterministic in-memory
-    graphs supplied by SourcerContext, e.g.:
-    - Leiden community detection inside
-      `StructureIdentificationKs`
-    - taint / dataflow path selection inside
-      `Effector/Receptor/InteractionIdentificationKs`
-    - archetype-fit scoring inside `*ArchetypingKs`
-    - LLM completion inside `*StatementKs`
-
-    Every emitted contribution carries a
-    `confidence` envelope (score < 1.0 by
-    construction) and a `provenance` envelope
-    (`ks@version`, `indexedRevision`, `tools[]`,
-    `ruleSnapshotSha256`, `seeds[]`) for full
-    reproducibility.
-  end note
-
-  ' --------------------------------------------------------
-  ' Blackboard - 3 panels x 6 GSM subjects = 18 slots
-  ' --------------------------------------------------------
+  ' Every KS IS A KnowledgeSource (extends the abstract contract).
+  KnowledgeSource <|-- StructureIdentificationKs
+  KnowledgeSource <|-- MechanismIdentificationKs
+  KnowledgeSource <|-- DataArchetypeIdentificationKs
+  KnowledgeSource <|-- EffectorIdentificationKs
+  KnowledgeSource <|-- ReceptorIdentificationKs
+  KnowledgeSource <|-- InteractionIdentificationKs
+  KnowledgeSource <|-- StructureArchetypingKs
+  KnowledgeSource <|-- MechanismArchetypingKs
+  KnowledgeSource <|-- DataArchetypeArchetypingKs
+  KnowledgeSource <|-- EffectorArchetypingKs
+  KnowledgeSource <|-- ReceptorArchetypingKs
+  KnowledgeSource <|-- InteractionArchetypingKs
+  KnowledgeSource <|-- StructureStatementKs
+  KnowledgeSource <|-- MechanismStatementKs
+  KnowledgeSource <|-- DataArchetypeStatementKs
+  KnowledgeSource <|-- EffectorStatementKs
+  KnowledgeSource <|-- ReceptorStatementKs
+  KnowledgeSource <|-- InteractionStatementKs
 
   package "Blackboard (REST; 3 panels, 18 slots)" as BB <<blackboard>> {
 
@@ -216,49 +157,15 @@ frame "CD - ITIP Definition Blackboard Repository Sourcer - components" as F1 {
     }
   }
 
-  StructureIdentificationKs    ..> StructureIdentity     : POST contribution
-  MechanismIdentificationKs    ..> MechanismIdentity     : POST contribution
-  DataArchetypeIdentificationKs ..> DataArchetypeIdentity : POST contribution
-  EffectorIdentificationKs     ..> EffectorIdentity      : POST contribution
-  ReceptorIdentificationKs     ..> ReceptorIdentity      : POST contribution
-  InteractionIdentificationKs  ..> InteractionIdentity   : POST contribution
+  ' Package-level dependencies
+  KS  ..> SVC : uses
+  SVC ..> BB  : posts contributions
 
-  StructureArchetypingKs       ..> StructureArchetype     : POST contribution
-  MechanismArchetypingKs       ..> MechanismArchetype     : POST contribution
-  DataArchetypeArchetypingKs   ..> DataArchetypeArchetype : POST contribution
-  EffectorArchetypingKs        ..> EffectorArchetype      : POST contribution
-  ReceptorArchetypingKs        ..> ReceptorArchetype      : POST contribution
-  InteractionArchetypingKs     ..> InteractionArchetype   : POST contribution
-
-  StructureStatementKs         ..> StructureStatement     : POST contribution
-  MechanismStatementKs         ..> MechanismStatement     : POST contribution
-  DataArchetypeStatementKs     ..> DataArchetypeStatement : POST contribution
-  EffectorStatementKs          ..> EffectorStatement      : POST contribution
-  ReceptorStatementKs          ..> ReceptorStatement      : POST contribution
-  InteractionStatementKs       ..> InteractionStatement   : POST contribution
-
-  ' DAG between blackboard panels (read-up promotion)
-  PDef -[#57606A,thickness=2]-> PArch : read-up
-  PArch -[#57606A,thickness=2]-> PStmt : read-up
-
-  note bottom of BB
-    **18 slots = 6 GSM subjects x 3 lifecycle stages.**
-    Subjects: Structure, Mechanism, DataArchetype,
-              Effector, Receptor, Interaction.
-    Stages:   Identity (Definition panel),
-              Archetype (Archetype panel),
-              Statement (Statement panel).
-
-    Every contribution `allOf`-merges the shared
-    `_common/confidence-envelope` and
-    `_common/provenance-envelope` schemas.
-
-    "DataArchetype" maps to the GSM `Archetype`
-    primitive in the data-shape role; the slot
-    name `DataArchetypeArchetype` (Archetype-stage
-    of the DataArchetype subject) is intentional
-    and reflects the lifecycle pattern uniformly.
-  end note
+  ' Force vertical stacking of top-level packages to keep
+  ' rendered width under PLANTUML_LIMIT_SIZE=4096.
+  KSAPI -[hidden]down-> SVC
+  SVC   -[hidden]down-> KS
+  KS    -[hidden]down-> BB
 }
 
 @enduml

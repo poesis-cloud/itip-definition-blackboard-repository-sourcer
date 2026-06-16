@@ -1,0 +1,43 @@
+# Prod environment values
+
+replicaCount: 2
+
+image:
+  repository: ghcr.io/your-org/itip-definition-blackboard-repository-sourcer
+  tag: "0.1.0"
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+fullnameOverride: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts: []
+  tls: []
+
+env:
+  BLACKBOARD_BASE_URL: http://sie-definition-blackboard-manager.sie.svc.cluster.local:8080
+  OIDC_ISSUER_URI: https://idp.prod.example/realms/sie
+  OAUTH2_CLIENT_ID: itip-sourcer
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector.monitoring.svc.cluster.local:4317
+
+secrets:
+  OAUTH2_CLIENT_SECRET: ""
+
+resources:
+  requests:
+    cpu: "1000m"
+    memory: "2Gi"
+  limits:
+    cpu: "4000m"
+    memory: "4Gi"
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://poesis.dev/itip/sourcer/framework-symbol-catalog.schema.json",
+  "title": "FrameworkSymbolCatalog",
+  "description": "Faithful projection of a framework's annotation/method/type bytecode. Carries ONLY facts present in the framework's published jars (annotation FQNs, @Target, @Retention, meta-annotations with their concrete attribute values, attribute declarations with @AliasFor links, method parameter names + types, type-hierarchy bases). Carries NO ITIP-specific role buckets — KSs derive roles by querying this projection (e.g. 'transitively meta-annotated with org.springframework.web.bind.annotation.RequestMapping' = endpoint annotation; HTTP verb is read from the resolved @RequestMapping(method=...) attribute).",
+  "type": "object",
+  "required": [ "frameworkId", "version", "extractedFrom" ],
+  "additionalProperties": false,
+  "properties": {
+    "frameworkId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Catalog file version, NOT framework version."
+    },
+    "extractedFrom": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [ "groupId", "artifactId", "version" ],
+        "additionalProperties": false,
+        "properties": {
+          "groupId": {
+            "type": "string"
+          },
+          "artifactId": {
+            "type": "string"
+          },
+          "version": {
+            "type": "string",
+            "description": "Single version or stable-range expression like '>=6.0.0 <7.0.0'."
+          }
+        }
+      }
+    },
+    "docBaseUrl": {
+      "type": "string",
+      "format": "uri",
+      "description": "Base URL for Javadoc HTML. KSs/UI compose deep links by appending the FQN converted to a doc path (e.g. base + 'org/springframework/kafka/annotation/KafkaListener.html')."
+    },
+    "docSource": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Provenance for per-symbol 'summary' fields.",
+      "properties": {
+        "artifact": {
+          "type": "string",
+          "description": "Source jar (e.g. 'spring-kafka-3.1.0-sources.jar') or 'manual' for hand-authored summaries."
+        },
+        "extractedBy": {
+          "type": "string",
+          "description": "Tool/agent identifier (e.g. 'javadoc-walker-v1', 'manual')."
+        },
+        "extractedAt": {
+          "type": "string",
+          "format": "date"
+        }
+      }
+    },
+    "annotations": {
+      "type": "object",
+      "description": "Keyed by annotation FQN (SCIP class symbol ending '#').",
+      "additionalProperties": {
+        "$ref": "#/$defs/annotationDecl"
+      }
+    },
+    "methods": {
+      "type": "object",
+      "description": "Keyed by method FQN (SCIP method symbol ending '().'). For call-site detection.",
+      "additionalProperties": {
+        "$ref": "#/$defs/methodDecl"
+      }
+    },
+    "types": {
+      "type": "object",
+      "description": "Keyed by type FQN (SCIP class symbol ending '#'). For typeHierarchy detection.",
+      "additionalProperties": {
+        "$ref": "#/$defs/typeDecl"
+      }
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "symbolFqn": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9_/$.\\-]+(#|\\(\\)\\.)$"
+    },
+    "javaTarget": {
+      "type": "string",
+      "enum": [ "TYPE", "METHOD", "FIELD", "PARAMETER", "CONSTRUCTOR", "ANNOTATION_TYPE", "PACKAGE", "TYPE_USE", "TYPE_PARAMETER", "MODULE", "RECORD_COMPONENT", "LOCAL_VARIABLE" ]
+    },
+    "annotationDecl": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "First-sentence Javadoc summary of the annotation type. For LLM-side semantic mapping (e.g. GSM role inference). Not consumed by structural KSs."
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/javaTarget"
+          },
+          "uniqueItems": true,
+          "description": "From @Target. Empty = unspecified (all targets)."
+        },
+        "retention": {
+          "type": "string",
+          "enum": [ "SOURCE", "CLASS", "RUNTIME" ]
+        },
+        "repeatable": {
+          "type": "boolean",
+          "default": false
+        },
+        "documented": {
+          "type": "boolean",
+          "default": false
+        },
+        "inherited": {
+          "type": "boolean",
+          "default": false
+        },
+        "metaAnnotations": {
+          "type": "array",
+          "description": "Annotations declared on THIS annotation. Captures Spring's composed-annotation idiom (e.g. @GetMapping is meta-annotated with @RequestMapping(method=GET)).",
+          "items": {
+            "type": "object",
+            "required": [ "fqn" ],
+            "additionalProperties": false,
+            "properties": {
+              "fqn": {
+                "$ref": "#/$defs/symbolFqn"
+              },
+              "values": {
+                "type": "object",
+                "additionalProperties": true,
+                "description": "Literal attribute values supplied at the meta-annotation site (constant-pool values; enum values use their simple name; arrays use JSON arrays). Absent attributes default to the annotation's declared default."
+              }
+            }
+          }
+        },
+        "attributes": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/attributeDecl"
+          }
+        }
+      }
+    },
+    "attributeDecl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [ "type" ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "First-sentence Javadoc summary of the attribute. Optional; LLM-facing."
+        },
+        "type": {
+          "type": "string",
+          "description": "Java type, e.g. 'java.lang.String[]', 'org.springframework.web.bind.annotation.RequestMethod[]', 'java.lang.Class<?>[]'."
+        },
+        "default": {
+          "description": "Literal default value from the annotation declaration; null when no default."
+        },
+        "aliasFor": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "@AliasFor declaration. Either intra-annotation alias (only 'attribute' set) or alias for a meta-annotation attribute (both 'annotation' and 'attribute' set).",
+          "properties": {
+            "annotation": {
+              "$ref": "#/$defs/symbolFqn"
+            },
+            "attribute": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "methodDecl": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "First-sentence Javadoc summary of the method. Optional; LLM-facing."
+        },
+        "static": {
+          "type": "boolean",
+          "default": false
+        },
+        "returnType": {
+          "type": "string"
+        },
+        "params": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [ "index", "type" ],
+            "additionalProperties": false,
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "name": {
+                "type": "string",
+                "description": "Only present if the jar was compiled with -parameters."
+              },
+              "type": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "overloadOf": {
+          "type": "string",
+          "description": "Optional grouping key linking arity-variant overloads (e.g. all KafkaTemplate#send(...) overloads share overloadOf='send')."
+        }
+      }
+    },
+    "typeDecl": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "First-sentence Javadoc summary of the type. Optional; LLM-facing."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [ "interface", "class", "abstract-class", "enum", "annotation", "record" ]
+        },
+        "typeParameters": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [ "index", "name" ],
+            "additionalProperties": false,
+            "properties": {
+              "index": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "name": {
+                "type": "string",
+                "description": "Generic parameter name as declared (e.g. 'T', 'ID')."
+              },
+              "bound": {
+                "type": "string",
+                "description": "Upper bound as a Java type, e.g. 'java.lang.Object'."
+              }
+            }
+          }
+        },
+        "extends": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/symbolFqn"
+          }
+        },
+        "implements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/symbolFqn"
+          }
+        }
+      }
+    }
+  }
+}

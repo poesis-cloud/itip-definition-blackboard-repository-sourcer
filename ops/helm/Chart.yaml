@@ -1,0 +1,6 @@
+apiVersion: v2
+name: itip-definition-blackboard-repository-sourcer
+description: Helm chart for the ITIP Definition Blackboard Repository Sourcer (client process)
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

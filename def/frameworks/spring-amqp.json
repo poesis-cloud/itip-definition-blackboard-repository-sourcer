@@ -1,0 +1,213 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "spring-amqp",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "org.springframework.amqp",
+    "artifactId": "spring-rabbit",
+    "version": ">=2.4.0 <4.0.0"
+  }, {
+    "groupId": "org.springframework.amqp",
+    "artifactId": "spring-amqp",
+    "version": ">=2.4.0 <4.0.0"
+  } ],
+  "docBaseUrl": "https://docs.spring.io/spring-amqp/api/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "org/springframework/amqp/rabbit/annotation/RabbitListener#": {
+      "summary": "Annotation that marks a method to be the target of a Rabbit message listener on the specified queues (or bindings).",
+      "targets": [ "TYPE", "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "repeatable": true,
+      "attributes": {
+        "id": {
+          "summary": "The unique identifier of the container managing for this endpoint.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "containerFactory": {
+          "summary": "The bean name of the RabbitListenerContainerFactory to use.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "queues": {
+          "summary": "The queues for this listener. Mutually exclusive with queuesToDeclare and bindings.",
+          "type": "java.lang.String[]",
+          "default": [ ]
+        },
+        "queuesToDeclare": {
+          "summary": "The queues to declare for this listener.",
+          "type": "org.springframework.amqp.rabbit.annotation.Queue[]",
+          "default": [ ]
+        },
+        "exclusive": {
+          "type": "boolean",
+          "default": false
+        },
+        "priority": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "admin": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "bindings": {
+          "summary": "Array of QueueBinding (queue + exchange + routing key) declarations.",
+          "type": "org.springframework.amqp.rabbit.annotation.QueueBinding[]",
+          "default": [ ]
+        },
+        "group": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "returnExceptions": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "errorHandler": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "concurrency": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "autoStartup": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "messageConverter": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "ackMode": {
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "org/springframework/amqp/rabbit/annotation/RabbitListeners#": {
+      "summary": "Container annotation that aggregates several @RabbitListener annotations.",
+      "targets": [ "TYPE", "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "type": "org.springframework.amqp.rabbit.annotation.RabbitListener[]",
+          "default": null
+        }
+      }
+    },
+    "org/springframework/amqp/rabbit/annotation/RabbitHandler#": {
+      "summary": "Annotation that marks a method to be the target of a Rabbit message listener within a class that is annotated with @RabbitListener.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "isDefault": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "org/springframework/amqp/rabbit/annotation/EnableRabbit#": {
+      "summary": "Enable Rabbit listener annotated endpoints created under the cover by a RabbitListenerContainerFactory.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true
+    }
+  },
+  "methods": {
+    "org/springframework/amqp/rabbit/core/RabbitTemplate#convertAndSend().": {
+      "summary": "Convert a Java object to an AMQP Message and send it to the default exchange with the default routing key.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "message",
+        "type": "java.lang.Object"
+      } ],
+      "overloadOf": "convertAndSend"
+    },
+    "org/springframework/amqp/rabbit/core/RabbitTemplate#convertAndSend(+1).": {
+      "summary": "Convert a Java object to an AMQP Message and send it to the default exchange with the given routing key.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "routingKey",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "message",
+        "type": "java.lang.Object"
+      } ],
+      "overloadOf": "convertAndSend"
+    },
+    "org/springframework/amqp/rabbit/core/RabbitTemplate#convertAndSend(+2).": {
+      "summary": "Convert a Java object to an AMQP Message and send it to the given exchange with the given routing key.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "exchange",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "routingKey",
+        "type": "java.lang.String"
+      }, {
+        "index": 2,
+        "name": "message",
+        "type": "java.lang.Object"
+      } ],
+      "overloadOf": "convertAndSend"
+    },
+    "org/springframework/amqp/rabbit/core/RabbitTemplate#send().": {
+      "summary": "Send the given Message to the default exchange with the default routing key.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "message",
+        "type": "org.springframework.amqp.core.Message"
+      } ],
+      "overloadOf": "send"
+    },
+    "org/springframework/amqp/rabbit/core/RabbitTemplate#send(+1).": {
+      "summary": "Send the given Message to the default exchange with the given routing key.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "routingKey",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "message",
+        "type": "org.springframework.amqp.core.Message"
+      } ],
+      "overloadOf": "send"
+    },
+    "org/springframework/amqp/rabbit/core/RabbitTemplate#send(+2).": {
+      "summary": "Send the given Message to the given exchange with the given routing key.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "exchange",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "routingKey",
+        "type": "java.lang.String"
+      }, {
+        "index": 2,
+        "name": "message",
+        "type": "org.springframework.amqp.core.Message"
+      } ],
+      "overloadOf": "send"
+    }
+  },
+  "notes": "Consumer queue source: @RabbitListener.queues OR .queuesToDeclare[].name OR .bindings[].value (Queue ref). Producer destination: when arity is 1, uses RabbitTemplate's configured exchange+routingKey defaults (KS work to read); when arity is 2, first param is routingKey on default exchange; when arity is 3, first two params are exchange+routingKey."
+}

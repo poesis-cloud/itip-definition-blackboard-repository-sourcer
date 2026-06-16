@@ -1,0 +1,197 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "spring-kafka",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "org.springframework.kafka",
+    "artifactId": "spring-kafka",
+    "version": ">=2.9.0 <4.0.0"
+  } ],
+  "docBaseUrl": "https://docs.spring.io/spring-kafka/api/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "org/springframework/kafka/annotation/KafkaListener#": {
+      "summary": "Annotation that marks a method to be the target of a Kafka message listener on the specified topics.",
+      "targets": [ "TYPE", "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "repeatable": true,
+      "attributes": {
+        "id": {
+          "summary": "The unique identifier of the container managing for this endpoint.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "containerFactory": {
+          "summary": "The bean name of the KafkaListenerContainerFactory to use to create the message listener container.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "topics": {
+          "summary": "The topics for this listener. May contain property placeholders.",
+          "type": "java.lang.String[]",
+          "default": [ ]
+        },
+        "topicPattern": {
+          "summary": "The topic pattern for this listener.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "topicPartitions": {
+          "summary": "The topicPartitions for this listener.",
+          "type": "org.springframework.kafka.annotation.TopicPartition[]",
+          "default": [ ]
+        },
+        "containerGroup": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "errorHandler": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "groupId": {
+          "summary": "Override the group.id property for the consumer factory.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "idIsGroup": {
+          "summary": "When groupId is not set, whether to use the id as the group.id.",
+          "type": "boolean",
+          "default": true
+        },
+        "clientIdPrefix": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "concurrency": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "autoStartup": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "properties": {
+          "type": "java.lang.String[]",
+          "default": [ ]
+        },
+        "batch": {
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "org/springframework/kafka/annotation/KafkaListeners#": {
+      "summary": "Container annotation that aggregates several @KafkaListener annotations.",
+      "targets": [ "TYPE", "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "type": "org.springframework.kafka.annotation.KafkaListener[]",
+          "default": null
+        }
+      }
+    },
+    "org/springframework/kafka/annotation/KafkaHandler#": {
+      "summary": "Annotation that marks a method to be the target of a Kafka message listener within a class that is annotated with @KafkaListener.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "isDefault": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "org/springframework/kafka/annotation/EnableKafka#": {
+      "summary": "Enable Kafka listener annotated endpoints that are created under the cover by a KafkaListenerContainerFactory.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true
+    }
+  },
+  "methods": {
+    "org/springframework/kafka/core/KafkaTemplate#send().": {
+      "summary": "Send the data to the provided topic with no key or partition.",
+      "returnType": "java.util.concurrent.CompletableFuture<org.springframework.kafka.support.SendResult<K, V>>",
+      "params": [ {
+        "index": 0,
+        "name": "topic",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "data",
+        "type": "V"
+      } ],
+      "overloadOf": "send"
+    },
+    "org/springframework/kafka/core/KafkaTemplate#send(+1).": {
+      "summary": "Send the data to the provided topic with the provided key and no partition.",
+      "returnType": "java.util.concurrent.CompletableFuture<org.springframework.kafka.support.SendResult<K, V>>",
+      "params": [ {
+        "index": 0,
+        "name": "topic",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "key",
+        "type": "K"
+      }, {
+        "index": 2,
+        "name": "data",
+        "type": "V"
+      } ],
+      "overloadOf": "send"
+    },
+    "org/springframework/kafka/core/KafkaTemplate#send(+2).": {
+      "summary": "Send the data to the provided topic with the provided key and partition.",
+      "returnType": "java.util.concurrent.CompletableFuture<org.springframework.kafka.support.SendResult<K, V>>",
+      "params": [ {
+        "index": 0,
+        "name": "topic",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "partition",
+        "type": "java.lang.Integer"
+      }, {
+        "index": 2,
+        "name": "key",
+        "type": "K"
+      }, {
+        "index": 3,
+        "name": "data",
+        "type": "V"
+      } ],
+      "overloadOf": "send"
+    },
+    "org/springframework/kafka/core/KafkaTemplate#send(+3).": {
+      "summary": "Send the provided ProducerRecord (which carries its own topic).",
+      "returnType": "java.util.concurrent.CompletableFuture<org.springframework.kafka.support.SendResult<K, V>>",
+      "params": [ {
+        "index": 0,
+        "name": "record",
+        "type": "org.apache.kafka.clients.producer.ProducerRecord<K, V>"
+      } ],
+      "overloadOf": "send"
+    },
+    "org/springframework/kafka/core/KafkaTemplate#sendDefault().": {
+      "summary": "Send the data to the default topic with no key or partition.",
+      "returnType": "java.util.concurrent.CompletableFuture<org.springframework.kafka.support.SendResult<K, V>>",
+      "params": [ {
+        "index": 0,
+        "name": "data",
+        "type": "V"
+      } ],
+      "overloadOf": "sendDefault"
+    }
+  },
+  "notes": "Consumer topic source: @KafkaListener.topics OR .topicPattern OR .topicPartitions[].topic — exclusive of one another. Producer topic source: first 'topic' parameter (overloads with ProducerRecord carry the topic inside the record — KS work to extract). All topic strings may carry ${...} placeholders or SpEL — KS work to resolve via application.yml from RepositoryService. sendDefault() uses the producer's defaultTopic property (configured externally — KS work)."
+}

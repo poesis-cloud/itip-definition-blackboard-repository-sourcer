@@ -4,27 +4,20 @@
   "title": "EffectorArchetypeContribution",
   "description": "Confidence-weighted archetype match asserting that a previously-identified outbound effector (HTTP client, message producer, DB writer, scheduled task) candidate matches a known Effector archetype catalog entry. Emitted by EffectorArchetypingKs by reading the upstream EffectorIdentity slot and the in-memory SourcerContext. Carries a confidence envelope (score < 1.0 by construction) and a provenance envelope (producing KS, indexed revision, tool versions, rule snapshot sha, seeds) for full reproducibility.",
   "type": "object",
-  "allOf": [
-    {
-      "properties": {
-        "confidence": {
-          "$ref": "bb://itip/blackboard/_common/confidence-envelope/v1#"
-        }
-      }
-    },
-    {
-      "properties": {
-        "provenance": {
-          "$ref": "bb://itip/blackboard/_common/provenance-envelope/v1#"
-        }
+  "allOf": [ {
+    "properties": {
+      "confidence": {
+        "$ref": "bb://itip/blackboard/confidence-envelope/v1#"
       }
     }
-  ],
-  "required": [
-    "subject",
-    "confidence",
-    "provenance"
-  ],
+  }, {
+    "properties": {
+      "provenance": {
+        "$ref": "bb://itip/blackboard/provenance-envelope/v1#"
+      }
+    }
+  } ],
+  "required": [ "subject", "confidence", "provenance" ],
   "properties": {
     "subject": {
       "type": "string",

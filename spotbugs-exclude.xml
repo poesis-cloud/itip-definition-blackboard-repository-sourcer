@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotBugs exclusion filter for itip-definition-blackboard-repository-sourcer.
+
+  Empty by design at bootstrap. Add entries only after demonstrating that a
+  warning is a verified false positive caused by a framework constraint where
+  a root-cause fix is impossible. Per copilot-instructions root-cause-first
+  rule, suppression is a last resort.
+-->
+<FindBugsFilter>
+  <!-- Generated protobuf classes from src/main/proto/scip.proto. Suppression
+       is justified: third-party generated code we do not own and cannot fix. -->
+  <Match>
+    <Package name="~cloud\.poesis\.itip\.sourcer\.scip.*"/>
+  </Match>
+  <!-- DefinitionBlackboardClient.restClient() returns the underlying RestClient
+       by reference. Justified: Spring's RestClient is built to be shared and is
+       effectively immutable after build(); defensive copying would defeat its
+       intended use as a thread-safe singleton. -->
+  <Match>
+    <Class name="cloud.poesis.itip.sourcer.client.DefinitionBlackboardClient"/>
+    <Method name="restClient"/>
+    <Bug pattern="EI_EXPOSE_REP"/>
+  </Match>
+</FindBugsFilter>

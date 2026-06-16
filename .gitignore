@@ -1,0 +1,13 @@
+# Java / Maven
+target/
+.mvn/
+.idea/
+.classpath
+.project
+.settings/
+
+# Dev environment overrides
+.env.dev
+
+# Dev environment generated files
+.dev-port-forwards.pids

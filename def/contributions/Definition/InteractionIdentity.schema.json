@@ -4,27 +4,20 @@
   "title": "InteractionIdentityContribution",
   "description": "Confidence-weighted identification asserting that a referenced source element is a candidate interaction (call/dataflow/message/dependency relation between two subjects) candidate. Emitted by InteractionIdentificationKs from the in-memory SourcerContext (deterministic graphs built from scip-java + joern + syft + framework scanners + iac scanners, never persisted on the blackboard). Carries a confidence envelope (score < 1.0 by construction) and a provenance envelope (producing KS, indexed revision, tool versions, rule snapshot sha, seeds) for full reproducibility.",
   "type": "object",
-  "allOf": [
-    {
-      "properties": {
-        "confidence": {
-          "$ref": "bb://itip/blackboard/_common/confidence-envelope/v1#"
-        }
-      }
-    },
-    {
-      "properties": {
-        "provenance": {
-          "$ref": "bb://itip/blackboard/_common/provenance-envelope/v1#"
-        }
+  "allOf": [ {
+    "properties": {
+      "confidence": {
+        "$ref": "bb://itip/blackboard/confidence-envelope/v1#"
       }
     }
-  ],
-  "required": [
-    "subject",
-    "confidence",
-    "provenance"
-  ],
+  }, {
+    "properties": {
+      "provenance": {
+        "$ref": "bb://itip/blackboard/provenance-envelope/v1#"
+      }
+    }
+  } ],
+  "required": [ "subject", "confidence", "provenance" ],
   "properties": {
     "subject": {
       "type": "string",

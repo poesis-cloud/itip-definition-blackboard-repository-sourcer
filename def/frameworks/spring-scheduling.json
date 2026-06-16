@@ -1,0 +1,109 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "spring-scheduling",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "org.springframework",
+    "artifactId": "spring-context",
+    "version": ">=5.3.0 <7.0.0"
+  } ],
+  "docBaseUrl": "https://docs.spring.io/spring-framework/docs/current/javadoc-api/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "org/springframework/scheduling/annotation/Scheduled#": {
+      "summary": "Annotation that marks a method to be scheduled. Exactly one of the cron, fixedDelay, or fixedRate attributes must be specified.",
+      "targets": [ "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "repeatable": true,
+      "attributes": {
+        "cron": {
+          "summary": "A cron-like expression, extending the usual UN*X definition.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "zone": {
+          "summary": "A time zone for which the cron expression will be resolved.",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "fixedDelay": {
+          "summary": "Execute the annotated method with a fixed period in milliseconds between the end of the last invocation and the start of the next.",
+          "type": "long",
+          "default": -1
+        },
+        "fixedDelayString": {
+          "summary": "Execute the annotated method with a fixed period between the end of the last invocation and the start of the next, given as a string (placeholder/SpEL allowed).",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "fixedRate": {
+          "summary": "Execute the annotated method with a fixed period in milliseconds between invocations.",
+          "type": "long",
+          "default": -1
+        },
+        "fixedRateString": {
+          "summary": "Execute the annotated method with a fixed period between invocations, given as a string (placeholder/SpEL allowed).",
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "initialDelay": {
+          "summary": "Number of units of time to delay before the first execution of a fixedRate or fixedDelay task.",
+          "type": "long",
+          "default": -1
+        },
+        "initialDelayString": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "timeUnit": {
+          "summary": "The TimeUnit to use for fixedDelay, fixedDelayString, fixedRate, fixedRateString, and initialDelay values.",
+          "type": "java.util.concurrent.TimeUnit",
+          "default": "MILLISECONDS"
+        }
+      }
+    },
+    "org/springframework/scheduling/annotation/Schedules#": {
+      "summary": "Container annotation that aggregates several @Scheduled annotations.",
+      "targets": [ "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "type": "org.springframework.scheduling.annotation.Scheduled[]",
+          "default": null
+        }
+      }
+    },
+    "org/springframework/scheduling/annotation/EnableScheduling#": {
+      "summary": "Enables Spring's scheduled task execution capability.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true
+    },
+    "org/springframework/scheduling/annotation/Async#": {
+      "summary": "Annotation that marks a method as a candidate for asynchronous execution.",
+      "targets": [ "TYPE", "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "summary": "A qualifier value for the specified asynchronous operation(s).",
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "org/springframework/scheduling/annotation/EnableAsync#": {
+      "summary": "Enables Spring's asynchronous method execution capability.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true
+    }
+  },
+  "notes": "Scheduling triggers are mutually exclusive: exactly one of cron/fixedDelay/fixedRate (with their *String alternates) must be set per @Scheduled. *String variants exist specifically to allow ${...} placeholder values resolved against Environment — KS work."
+}

@@ -1,0 +1,176 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "spring-http-clients",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "org.springframework",
+    "artifactId": "spring-web",
+    "version": ">=5.3.0 <7.0.0"
+  }, {
+    "groupId": "org.springframework",
+    "artifactId": "spring-webflux",
+    "version": ">=5.3.0 <7.0.0"
+  }, {
+    "groupId": "com.squareup.okhttp3",
+    "artifactId": "okhttp",
+    "version": ">=4.9.0 <5.0.0"
+  } ],
+  "docBaseUrl": "https://docs.spring.io/spring-framework/docs/current/javadoc-api/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "methods": {
+    "org/springframework/web/client/RestTemplate#exchange().": {
+      "summary": "Execute the HTTP method to the given URI template, writing the given request entity to the request, and return the response as ResponseEntity.",
+      "returnType": "org.springframework.http.ResponseEntity<T>",
+      "params": [ {
+        "index": 0,
+        "name": "url",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "method",
+        "type": "org.springframework.http.HttpMethod"
+      }, {
+        "index": 2,
+        "name": "requestEntity",
+        "type": "org.springframework.http.HttpEntity<?>"
+      }, {
+        "index": 3,
+        "name": "responseType",
+        "type": "java.lang.Class<T>"
+      } ],
+      "overloadOf": "exchange"
+    },
+    "org/springframework/web/client/RestTemplate#getForObject().": {
+      "summary": "Retrieve a representation by doing a GET on the specified URL.",
+      "returnType": "T",
+      "params": [ {
+        "index": 0,
+        "name": "url",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "responseType",
+        "type": "java.lang.Class<T>"
+      } ],
+      "overloadOf": "getForObject"
+    },
+    "org/springframework/web/client/RestTemplate#postForObject().": {
+      "summary": "Create a new resource by POSTing the given object to the URI template, and return the representation found in the response.",
+      "returnType": "T",
+      "params": [ {
+        "index": 0,
+        "name": "url",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "request",
+        "type": "java.lang.Object"
+      }, {
+        "index": 2,
+        "name": "responseType",
+        "type": "java.lang.Class<T>"
+      } ],
+      "overloadOf": "postForObject"
+    },
+    "org/springframework/web/client/RestTemplate#put().": {
+      "summary": "Create or update a resource by PUTting the given object to the URI.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "url",
+        "type": "java.lang.String"
+      }, {
+        "index": 1,
+        "name": "request",
+        "type": "java.lang.Object"
+      } ],
+      "overloadOf": "put"
+    },
+    "org/springframework/web/client/RestTemplate#delete().": {
+      "summary": "Delete the resources at the specified URI.",
+      "returnType": "void",
+      "params": [ {
+        "index": 0,
+        "name": "url",
+        "type": "java.lang.String"
+      } ],
+      "overloadOf": "delete"
+    },
+    "org/springframework/web/reactive/function/client/WebClient#get().": {
+      "summary": "Start building an HTTP GET request.",
+      "returnType": "org.springframework.web.reactive.function.client.WebClient.RequestHeadersUriSpec<?>",
+      "params": [ ],
+      "overloadOf": "get"
+    },
+    "org/springframework/web/reactive/function/client/WebClient#post().": {
+      "summary": "Start building an HTTP POST request.",
+      "returnType": "org.springframework.web.reactive.function.client.WebClient.RequestBodyUriSpec",
+      "params": [ ],
+      "overloadOf": "post"
+    },
+    "org/springframework/web/reactive/function/client/WebClient#put().": {
+      "summary": "Start building an HTTP PUT request.",
+      "returnType": "org.springframework.web.reactive.function.client.WebClient.RequestBodyUriSpec",
+      "params": [ ],
+      "overloadOf": "put"
+    },
+    "org/springframework/web/reactive/function/client/WebClient#delete().": {
+      "summary": "Start building an HTTP DELETE request.",
+      "returnType": "org.springframework.web.reactive.function.client.WebClient.RequestHeadersUriSpec<?>",
+      "params": [ ],
+      "overloadOf": "delete"
+    },
+    "org/springframework/web/reactive/function/client/WebClient$RequestHeadersUriSpec#uri().": {
+      "summary": "Specify the URI for the request.",
+      "returnType": "S",
+      "params": [ {
+        "index": 0,
+        "name": "uri",
+        "type": "java.lang.String"
+      } ],
+      "overloadOf": "uri"
+    },
+    "okhttp3/OkHttpClient#newCall().": {
+      "summary": "Prepares the request to be executed at some point in the future.",
+      "returnType": "okhttp3.Call",
+      "params": [ {
+        "index": 0,
+        "name": "request",
+        "type": "okhttp3.Request"
+      } ]
+    },
+    "java/net/http/HttpClient#send().": {
+      "summary": "Sends the given request using this client, blocking if necessary to get the response.",
+      "returnType": "java.net.http.HttpResponse<T>",
+      "params": [ {
+        "index": 0,
+        "name": "request",
+        "type": "java.net.http.HttpRequest"
+      }, {
+        "index": 1,
+        "name": "responseBodyHandler",
+        "type": "java.net.http.HttpResponse.BodyHandler<T>"
+      } ],
+      "overloadOf": "send"
+    },
+    "java/net/http/HttpClient#sendAsync().": {
+      "summary": "Sends the given request asynchronously using this client with the given response body handler.",
+      "returnType": "java.util.concurrent.CompletableFuture<java.net.http.HttpResponse<T>>",
+      "params": [ {
+        "index": 0,
+        "name": "request",
+        "type": "java.net.http.HttpRequest"
+      }, {
+        "index": 1,
+        "name": "responseBodyHandler",
+        "type": "java.net.http.HttpResponse.BodyHandler<T>"
+      } ],
+      "overloadOf": "sendAsync"
+    }
+  },
+  "notes": "HTTP method (verb) source: explicit method-name (RestTemplate#getForObject = GET, postForObject = POST, put = PUT, delete = DELETE) OR HttpMethod parameter (RestTemplate#exchange index 1) OR builder chain (WebClient#get/post/put/delete returns a builder; URI is then set via .uri(...)). For OkHttp/java HttpClient, verb is on the constructed Request — KS must trace the request build chain."
+}

@@ -1,0 +1,147 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "spring-di",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "org.springframework",
+    "artifactId": "spring-context",
+    "version": ">=5.3.0 <7.0.0"
+  }, {
+    "groupId": "org.springframework",
+    "artifactId": "spring-beans",
+    "version": ">=5.3.0 <7.0.0"
+  } ],
+  "docBaseUrl": "https://docs.spring.io/spring-framework/docs/current/javadoc-api/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "org/springframework/stereotype/Component#": {
+      "summary": "Indicates that an annotated class is a 'component', a candidate for auto-detection when using annotation-based configuration and classpath scanning.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/stereotype/Indexed#"
+      } ],
+      "attributes": {
+        "value": {
+          "summary": "The value may indicate a suggestion for a logical component name.",
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "org/springframework/stereotype/Service#": {
+      "summary": "Indicates that an annotated class is a 'Service', originally defined by DDD as 'an operation offered as an interface that stands alone in the model'.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/stereotype/Component#"
+      } ]
+    },
+    "org/springframework/stereotype/Repository#": {
+      "summary": "Indicates that an annotated class is a 'Repository', originally defined by DDD as 'a mechanism for encapsulating storage, retrieval, and search behavior which emulates a collection of objects'.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/stereotype/Component#"
+      } ]
+    },
+    "org/springframework/context/annotation/Configuration#": {
+      "summary": "Indicates that a class declares one or more @Bean methods and may be processed by the Spring container to generate bean definitions and service requests for those beans at runtime.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "metaAnnotations": [ {
+        "fqn": "org/springframework/stereotype/Component#"
+      } ],
+      "attributes": {
+        "proxyBeanMethods": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "org/springframework/context/annotation/Bean#": {
+      "summary": "Indicates that a method produces a bean to be managed by the Spring container.",
+      "targets": [ "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "summary": "Alias for 'name'.",
+          "type": "java.lang.String[]",
+          "default": [ ],
+          "aliasFor": {
+            "attribute": "name"
+          }
+        },
+        "name": {
+          "summary": "The name of this bean, or if several, aliases for this bean.",
+          "type": "java.lang.String[]",
+          "default": [ ],
+          "aliasFor": {
+            "attribute": "value"
+          }
+        },
+        "initMethod": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "destroyMethod": {
+          "type": "java.lang.String",
+          "default": "(inferred)"
+        }
+      }
+    },
+    "org/springframework/beans/factory/annotation/Autowired#": {
+      "summary": "Marks a constructor, field, setter method, or config method as to be autowired by Spring's dependency injection facilities.",
+      "targets": [ "CONSTRUCTOR", "METHOD", "PARAMETER", "FIELD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "required": {
+          "summary": "Declares whether the annotated dependency is required.",
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "org/springframework/beans/factory/annotation/Qualifier#": {
+      "summary": "This annotation may be used on a field or parameter as a qualifier for candidate beans when autowiring.",
+      "targets": [ "FIELD", "METHOD", "PARAMETER", "TYPE", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    },
+    "org/springframework/context/annotation/Primary#": {
+      "summary": "Indicates that a bean should be given preference when multiple candidates are qualified to autowire a single-valued dependency.",
+      "targets": [ "TYPE", "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true
+    },
+    "org/springframework/context/annotation/Lazy#": {
+      "summary": "Indicates whether a bean is to be lazily initialized.",
+      "targets": [ "TYPE", "METHOD", "CONSTRUCTOR", "PARAMETER", "FIELD" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    }
+  },
+  "notes": "Bean role = type transitively meta-annotated with @Component (covers @Service/@Repository/@Configuration/@Controller chains) OR method annotated with @Bean. Bean name resolution: explicit attribute > BeanNameGenerator default (decapitalized simple class name)."
+}

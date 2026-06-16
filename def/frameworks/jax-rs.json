@@ -1,0 +1,288 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "jax-rs",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "jakarta.ws.rs",
+    "artifactId": "jakarta.ws.rs-api",
+    "version": ">=3.0.0"
+  } ],
+  "docBaseUrl": "https://jakarta.ee/specifications/restful-ws/3.1/apidocs/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "jakarta/ws/rs/Path#": {
+      "summary": "Identifies the URI path that a resource class or class method will serve requests for.",
+      "targets": [ "TYPE", "METHOD" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "summary": "Defines a URI template for the resource class or method, must not include matrix parameters.",
+          "type": "java.lang.String",
+          "default": null
+        }
+      }
+    },
+    "jakarta/ws/rs/GET#": {
+      "summary": "Indicates that the annotated method responds to HTTP GET requests.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "jakarta/ws/rs/HttpMethod#",
+        "values": {
+          "value": "GET"
+        }
+      } ]
+    },
+    "jakarta/ws/rs/POST#": {
+      "summary": "Indicates that the annotated method responds to HTTP POST requests.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "jakarta/ws/rs/HttpMethod#",
+        "values": {
+          "value": "POST"
+        }
+      } ]
+    },
+    "jakarta/ws/rs/PUT#": {
+      "summary": "Indicates that the annotated method responds to HTTP PUT requests.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "jakarta/ws/rs/HttpMethod#",
+        "values": {
+          "value": "PUT"
+        }
+      } ]
+    },
+    "jakarta/ws/rs/DELETE#": {
+      "summary": "Indicates that the annotated method responds to HTTP DELETE requests.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "jakarta/ws/rs/HttpMethod#",
+        "values": {
+          "value": "DELETE"
+        }
+      } ]
+    },
+    "jakarta/ws/rs/PATCH#": {
+      "summary": "Indicates that the annotated method responds to HTTP PATCH requests.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "jakarta/ws/rs/HttpMethod#",
+        "values": {
+          "value": "PATCH"
+        }
+      } ]
+    },
+    "jakarta/ws/rs/HEAD#": {
+      "summary": "Indicates that the annotated method responds to HTTP HEAD requests.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "jakarta/ws/rs/HttpMethod#",
+        "values": {
+          "value": "HEAD"
+        }
+      } ]
+    },
+    "jakarta/ws/rs/OPTIONS#": {
+      "summary": "Indicates that the annotated method responds to HTTP OPTIONS requests.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "jakarta/ws/rs/HttpMethod#",
+        "values": {
+          "value": "OPTIONS"
+        }
+      } ]
+    },
+    "jakarta/ws/rs/HttpMethod#": {
+      "summary": "Associates the name of an HTTP method with an annotation. A method designated by an annotation that is itself annotated with @HttpMethod is considered an HTTP request method handler.",
+      "targets": [ "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "summary": "Specifies the name of an HTTP method (e.g. 'GET').",
+          "type": "java.lang.String",
+          "default": null
+        }
+      }
+    },
+    "jakarta/ws/rs/ApplicationPath#": {
+      "summary": "Identifies the application path that serves as the base URI for all resource URIs provided by Path.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "summary": "Defines the base URI for all resource URIs.",
+          "type": "java.lang.String",
+          "default": null
+        }
+      }
+    },
+    "jakarta/ws/rs/Produces#": {
+      "summary": "Defines the media type(s) that the methods of a resource class or MessageBodyWriter can produce.",
+      "targets": [ "TYPE", "METHOD" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "type": "java.lang.String[]",
+          "default": [ "*/*" ]
+        }
+      }
+    },
+    "jakarta/ws/rs/Consumes#": {
+      "summary": "Defines the media types that the methods of a resource class or MessageBodyReader can accept.",
+      "targets": [ "TYPE", "METHOD" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "type": "java.lang.String[]",
+          "default": [ "*/*" ]
+        }
+      }
+    },
+    "jakarta/ws/rs/PathParam#": {
+      "summary": "Binds the value of a URI template parameter to a resource method parameter, resource class field, or resource class bean property.",
+      "targets": [ "PARAMETER", "METHOD", "FIELD" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "summary": "Defines the name of the URI template parameter whose value will be used.",
+          "type": "java.lang.String",
+          "default": null
+        }
+      }
+    },
+    "jakarta/ws/rs/QueryParam#": {
+      "summary": "Binds the value(s) of a HTTP query parameter to a resource method parameter, resource class field, or resource class bean property.",
+      "targets": [ "PARAMETER", "METHOD", "FIELD" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "summary": "Defines the name of the HTTP query parameter whose value will be used.",
+          "type": "java.lang.String",
+          "default": null
+        }
+      }
+    },
+    "javax/ws/rs/Path#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.Path.",
+      "targets": [ "TYPE", "METHOD" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "type": "java.lang.String",
+          "default": null
+        }
+      }
+    },
+    "javax/ws/rs/GET#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.GET.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "javax/ws/rs/HttpMethod#",
+        "values": {
+          "value": "GET"
+        }
+      } ]
+    },
+    "javax/ws/rs/POST#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.POST.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "javax/ws/rs/HttpMethod#",
+        "values": {
+          "value": "POST"
+        }
+      } ]
+    },
+    "javax/ws/rs/PUT#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.PUT.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "javax/ws/rs/HttpMethod#",
+        "values": {
+          "value": "PUT"
+        }
+      } ]
+    },
+    "javax/ws/rs/DELETE#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.DELETE.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "javax/ws/rs/HttpMethod#",
+        "values": {
+          "value": "DELETE"
+        }
+      } ]
+    },
+    "javax/ws/rs/PATCH#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.PATCH.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "javax/ws/rs/HttpMethod#",
+        "values": {
+          "value": "PATCH"
+        }
+      } ]
+    },
+    "javax/ws/rs/HEAD#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.HEAD.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "javax/ws/rs/HttpMethod#",
+        "values": {
+          "value": "HEAD"
+        }
+      } ]
+    },
+    "javax/ws/rs/OPTIONS#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.OPTIONS.",
+      "targets": [ "METHOD" ],
+      "retention": "RUNTIME",
+      "metaAnnotations": [ {
+        "fqn": "javax/ws/rs/HttpMethod#",
+        "values": {
+          "value": "OPTIONS"
+        }
+      } ]
+    },
+    "javax/ws/rs/HttpMethod#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.HttpMethod.",
+      "targets": [ "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "type": "java.lang.String",
+          "default": null
+        }
+      }
+    },
+    "javax/ws/rs/ApplicationPath#": {
+      "summary": "Legacy javax namespace; see jakarta.ws.rs.ApplicationPath.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "attributes": {
+        "value": {
+          "type": "java.lang.String",
+          "default": null
+        }
+      }
+    }
+  },
+  "notes": "Endpoint role = method annotated with any annotation transitively meta-annotated with jakarta.ws.rs.HttpMethod (or its javax counterpart). HTTP verb is read from the resolved @HttpMethod.value. Class-level @Path concatenates with method-level @Path; @ApplicationPath on Application subclass is the global prefix — KS work."
+}

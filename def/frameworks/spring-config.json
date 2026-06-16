@@ -1,0 +1,116 @@
+{
+  "$schema": "./framework-symbol-catalog.schema.json",
+  "frameworkId": "spring-config",
+  "version": "1.0.0",
+  "extractedFrom": [ {
+    "groupId": "org.springframework.boot",
+    "artifactId": "spring-boot",
+    "version": ">=2.7.0 <4.0.0"
+  }, {
+    "groupId": "org.springframework.boot",
+    "artifactId": "spring-boot-autoconfigure",
+    "version": ">=2.7.0 <4.0.0"
+  }, {
+    "groupId": "org.springframework",
+    "artifactId": "spring-context",
+    "version": ">=5.3.0 <7.0.0"
+  } ],
+  "docBaseUrl": "https://docs.spring.io/spring-boot/docs/current/api/",
+  "docSource": {
+    "artifact": "manual",
+    "extractedBy": "manual",
+    "extractedAt": "2026-04-30"
+  },
+  "annotations": {
+    "org/springframework/boot/context/properties/ConfigurationProperties#": {
+      "summary": "Annotation for externalized configuration. Add this to a class definition or a @Bean method in a @Configuration class if you want to bind and validate some external Properties (e.g. from a .properties file).",
+      "targets": [ "TYPE", "METHOD", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "summary": "The name prefix of the properties that are valid to bind to this object. Alias for 'prefix'.",
+          "type": "java.lang.String",
+          "default": "",
+          "aliasFor": {
+            "attribute": "prefix"
+          }
+        },
+        "prefix": {
+          "summary": "The name prefix of the properties that are valid to bind to this object. Alias for 'value'.",
+          "type": "java.lang.String",
+          "default": "",
+          "aliasFor": {
+            "attribute": "value"
+          }
+        },
+        "ignoreInvalidFields": {
+          "type": "boolean",
+          "default": false
+        },
+        "ignoreUnknownFields": {
+          "type": "boolean",
+          "default": true
+        }
+      }
+    },
+    "org/springframework/boot/context/properties/ConstructorBinding#": {
+      "summary": "Indicates that configuration properties should be bound using constructor arguments rather than by calling setters.",
+      "targets": [ "TYPE", "CONSTRUCTOR" ],
+      "retention": "RUNTIME",
+      "documented": true
+    },
+    "org/springframework/boot/context/properties/EnableConfigurationProperties#": {
+      "summary": "Enable support for @ConfigurationProperties annotated beans.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "type": "java.lang.Class<?>[]",
+          "default": [ ]
+        }
+      }
+    },
+    "org/springframework/beans/factory/annotation/Value#": {
+      "summary": "Annotation used at the field or method/constructor parameter level that indicates a default value expression for the annotated element.",
+      "targets": [ "FIELD", "METHOD", "PARAMETER", "ANNOTATION_TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "attributes": {
+        "value": {
+          "summary": "The actual value expression such as #{systemProperties.myProp} or property placeholder such as ${my.app.myProp}.",
+          "type": "java.lang.String",
+          "default": null
+        }
+      }
+    },
+    "org/springframework/context/annotation/PropertySource#": {
+      "summary": "Annotation providing a convenient and declarative mechanism for adding a PropertySource to Spring's Environment.",
+      "targets": [ "TYPE" ],
+      "retention": "RUNTIME",
+      "documented": true,
+      "repeatable": true,
+      "attributes": {
+        "name": {
+          "type": "java.lang.String",
+          "default": ""
+        },
+        "value": {
+          "summary": "Indicate the resource location(s) of the properties file to be loaded.",
+          "type": "java.lang.String[]",
+          "default": null
+        },
+        "ignoreResourceNotFound": {
+          "type": "boolean",
+          "default": false
+        },
+        "encoding": {
+          "type": "java.lang.String",
+          "default": ""
+        }
+      }
+    }
+  },
+  "notes": "Externally-bound config types: @ConfigurationProperties classes, with prefix being the resolved 'prefix' (or 'value') attribute. @Value injection points carry inline expressions that may need RepositoryService for property file resolution. PropertySource locations may carry ${...} placeholders that nest — KS work."
+}
